@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="onestep-title">
+  <title id="onestep-title">Onestep 会话舞台</title>
+  <desc>一个焦点窗口（右侧大窗）与两个候场窗口（左侧小窗）组成的舞台抽象图形；纯色块构成，无文字、无外部资源。</desc>
+  <!-- 候场栏：两张候场窗（核心状态色：官方 business primary 的深阶） -->
+  <g fill="#2E6BDE">
+    <rect x="14" y="26" width="26" height="32" rx="6"/>
+    <rect x="14" y="66" width="26" height="32" rx="6"/>
+  </g>
+  <!-- 候场窗内容行（抽象为两行白色文本条） -->
+  <g fill="#FFFFFF" opacity="0.9">
+    <rect x="20" y="36" width="14" height="4" rx="2"/>
+    <rect x="20" y="44" width="9" height="3" rx="1.5"/>
+    <rect x="20" y="76" width="14" height="4" rx="2"/>
+    <rect x="20" y="84" width="9" height="3" rx="1.5"/>
+  </g>
+  <!-- 焦点窗：右侧大窗 -->
+  <rect x="46" y="26" width="70" height="72" rx="12" fill="#4C8DFF"/>
+  <!-- 焦点窗 chrome 与正文行 -->
+  <g fill="#FFFFFF">
+    <circle cx="58" cy="38" r="3" opacity="0.95"/>
+    <rect x="66" y="35.5" width="30" height="5" rx="2.5" opacity="0.95"/>
+    <rect x="58" y="52" width="46" height="5" rx="2.5" opacity="0.75"/>
+    <rect x="58" y="64" width="34" height="5" rx="2.5" opacity="0.75"/>
+    <rect x="58" y="76" width="40" height="5" rx="2.5" opacity="0.75"/>
+  </g>
+</svg>

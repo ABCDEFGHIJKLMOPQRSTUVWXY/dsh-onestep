@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-11-19T10:01:13.747Z",
+  "dshVersion": "0.2.2-rc.1",
+  "pluginVersion": "0.7.0",
+  "shots": [
+    {
+      "file": "02-stage-light.png",
+      "width": 2880,
+      "height": 1800,
+      "sha256": "75B3C168795C24E3FE64A968652F0FD206AF18C2DCF3232DA7876399E15830DD"
+    },
+    {
+      "file": "03-stage-dark.png",
+      "width": 2880,
+      "height": 1800,
+      "sha256": "D6E6D15CF56223207FEA0E520986149E10E81C9F4077378F8129CBB4D21F0994"
+    },
+    {
+      "file": "04-drag-hud.png",
+      "width": 2880,
+      "height": 1800,
+      "sha256": "C6A11DA67B27D410563792EDDABBA59EDA3A2BBC8B0C2C1328D01864A87A52C1"
+    },
+    {
+      "file": "08-floats-light.png",
+      "width": 2880,
+      "height": 1800,
+      "sha256": "FE42A73F5DD895630505E1AA2AB7BAAC88A7E65E943670FC89C0F030E1FF2A94"
+    },
+    {
+      "file": "11-rail-collapsed.png",
+      "width": 2880,
+      "height": 1800,
+      "sha256": "663AC86FCE12FF659789D12CCEFD274096CE793144795A1918D5B6BFFF556CD0"
+    }
+  ],
+  "privacy": {
+    "isolatedHome": "tmp/shots-home (DSH_HOME): fresh profiles/, sessions/, storages/ created for these screenshots; no reuse of any existing DSH data root",
+    "containsRealSessionTitles": false,
+    "containsAccountInfo": false,
+    "syntheticSessions": [
+      "发布说明整理",
+      "接口对齐",
+      "周报草稿",
+      "依赖升级"
+    ],
+    "syntheticWorkspace": "示例工作区 (tmp/shots-workspace, repo-local temp dir)",
+    "mockLlm": "local mock at 127.0.0.1:4662 (Anthropic Messages-compatible SSE); launch environment DEEPSEEK_API_KEY/DEEPSEEK_BASE_URL; no real provider account",
+    "reviewedBy": "lead (per-image read_image inspection; pointer parked away from sidebar/rail before capture to avoid hover tooltips exposing local paths)",
+    "note": "11-rail-collapsed 曾因鼠标悬停在侧栏而带入含本机路径的 hover 浮层，已把指针移开后重拍；02/03/04/08/11 均经逐图人工复核。"
+  }
+}

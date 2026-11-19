@@ -1,0 +1,9 @@
+{
+  "command": "npm test",
+  "total": 151,
+  "pass": 151,
+  "fail": 0,
+  "testFiles": 13,
+  "note": "新增 tests/styles.test.mjs（4 条 CSS 结构回归）",
+  "generatedAt": "2026-11-19T10:02:20.942Z"
+}

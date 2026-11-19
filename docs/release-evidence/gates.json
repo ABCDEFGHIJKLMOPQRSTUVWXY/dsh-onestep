@@ -1,0 +1,45 @@
+{
+  "engines": {
+    "pass": true,
+    "range": ">=0.2.2-rc.1 <0.3.0-0 || >=0.2.1-rc.5 <0.2.2-0",
+    "satisfies": {
+      "0.2.2-rc.1": true,
+      "0.2.1-rc.5": true,
+      "0.2.0-rc.1": false,
+      "0.2.1-alpha.1": false,
+      "0.2.2-alpha.3": false,
+      "0.3.0-rc.1": false,
+      "0.2.3-rc.1": true
+    }
+  },
+  "i18n": {
+    "pass": true,
+    "locales": [
+      "zh",
+      "en"
+    ],
+    "keysPerLocale": 75,
+    "hardcoded": 0
+  },
+  "releaseHygiene": {
+    "pass": true,
+    "checks": 33,
+    "hits": 0
+  },
+  "docsLinks": {
+    "pass": true,
+    "checks": 16,
+    "scannedMarkdown": 10,
+    "screenshots": 6
+  },
+  "syntax": {
+    "pass": true,
+    "command": "node --check client.js"
+  },
+  "build": {
+    "pass": true,
+    "command": "node scripts/build.mjs",
+    "reproducible": true
+  },
+  "generatedAt": "2026-11-19T10:02:20.942Z"
+}

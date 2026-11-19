@@ -1,0 +1,33 @@
+# 依赖
+node_modules/
+tools/pw/node_modules/
+
+# 本地证据 / 临时产物（含本机回环 token、cookie、日志与会话数据，禁止入库）
+tmp/
+artifacts/
+*.tgz
+*.log
+
+# 本机浏览器用户数据（Chromium History / Login Data）
+tmp-edge-profile*/
+
+# 内部归档：历史计划/审查/长文与旧截图（含本机路径与真实使用记录，保留在本地供追溯，不入库）
+docs/archive/
+
+# 第三方研究快照（DSH 官方仓库副本，非本项目代码）
+doc/
+
+# 密钥/环境文件
+.env
+.env.*
+*.pem
+*.key
+
+# 编辑器/系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 临时截图
+cdp-*.png

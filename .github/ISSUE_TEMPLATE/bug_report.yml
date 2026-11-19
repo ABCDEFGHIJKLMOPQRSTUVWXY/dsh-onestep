@@ -1,0 +1,144 @@
+name: Bug 报告
+description: 报告 dsh-onestep 的可复现缺陷（舞台/候场/拖拽/键盘/伴生窗/安装）。安全漏洞请按 SECURITY.md 的私密渠道提交，不要公开报告。
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 提交前请先确认
+
+        - 先搜索现有 issue，避免重复。
+        - **请勿粘贴**：token、cookie、凭据、内网地址、主机名、完整会话内容。截图前请打码。
+        - **安全漏洞不要在这里报告**：请按仓库 `SECURITY.md` 的私密渠道（GitHub Private Vulnerability Reporting）提交，不要在公开 issue 里贴细节。
+        - 复现所需的最小环境：DSH 版本、profile、主题/分辨率、是否在舞台上——下面逐项填写。
+
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH 版本
+      description: 桌面应用「设置 → 关于」或 `dsh --version` 的完整版本号（含 rc 后缀）。
+      placeholder: "0.2.2-rc.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: profile
+    attributes:
+      label: 运行 profile
+      description: 桌面 App 是 desktop profile；浏览器访问 `dsh web` 一般是 web profile；开发/回归可能用隔离 profile。
+      options:
+        - desktop（桌面 App）
+        - web（浏览器 / dsh web）
+        - 隔离 profile（开发/回归用，自定义 profile 名）
+        - 其他 / 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: theme-resolution
+    attributes:
+      label: 主题与分辨率
+      description: 明暗主题 + 窗口尺寸（布局断点会随之变化）。
+      placeholder: "dark / 1440×900"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stage-mounted
+    attributes:
+      label: 舞台是否已挂载
+      description: 出问题时是否处于舞台模式（有候场窗）。可在控制台执行 `window.__ONESTEP__.snapshot().mounted` 辅助判断。
+      options:
+        - 是（舞台已挂载）
+        - 否（普通模式，官方界面）
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从启动 DSH 开始的最小步骤；每步写清点击/拖拽/输入/快捷键。
+      placeholder: |
+        1. 打开 DSH，进入任意会话
+        2. 左栏会话行 hover → 点「加入舞台」
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: 期望行为 vs 实际行为
+      description: 分别写期望与实际观察。可附截图/GIF（请先脱敏）。
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: 控制台错误
+      description: 开发者工具 → Console，过滤 `[onestep]` 与红色错误，贴原始文本（含堆栈）；没有错误就写「无」。
+      render: shell
+      placeholder: |
+        [onestep] {"event":"...","data":...}
+        Uncaught TypeError: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: snapshot
+    attributes:
+      label: window.__ONESTEP__ 快照
+      description: |
+        在 Console 执行下列命令，把输出贴到下面。**先自行脱敏**：快照含会话 ID、会话标题采样与事件日志。
+
+        ```js
+        JSON.stringify(window.__ONESTEP__.snapshot())
+        ```
+
+        若 `window.__ONESTEP__` 不存在，说明插件未加载；请在「日志位置」补充装载信息（boot 条目、插件安装状态）。
+    validations:
+      required: true
+
+  - type: input
+    id: logs
+    attributes:
+      label: 日志位置
+      description: 只贴路径，不贴内容。宿主半 JSONL 日志仅在配置 `probeLog` 或环境变量 `ONESTEP_P0_LOG` 时写文件；另有 DSH 应用日志/启动输出。
+      placeholder: "<日志文件路径>"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: tried
+    attributes:
+      label: 已尝试的恢复方式
+      description: 勾选做过的操作（便于区分插件自身缺陷与宿主/环境问题）。
+      options:
+        - label: 刷新页面
+        - label: 重启 DSH / 实例
+        - label: 退出舞台（清空候场）后仍复现
+        - label: 全新 profile 安装后仍复现
+        - label: 卸载插件后问题消失
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 其他上下文
+      description: 缩放比例、自定义主题、其他插件、工作区数量、候场数（1–3）、是否开着伴侣窗/浏览器 tab 等。
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我已搜索现有 issue，未发现重复
+          required: true
+        - label: 我确认内容不含 token/凭据/会话内容等敏感信息
+          required: true

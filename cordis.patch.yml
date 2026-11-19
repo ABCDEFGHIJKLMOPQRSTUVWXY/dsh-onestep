@@ -1,0 +1,6 @@
+# dsh-onestep bundle 层：把本包挂进 profile 的 loader 树。
+# 安装到 profile 后，profile package.json 的 dsh.profile.bundles 需包含 "dsh-onestep"。
+- insert:
+    - id: dsh-onestep
+      name: 'dsh-onestep'
+      config: {}

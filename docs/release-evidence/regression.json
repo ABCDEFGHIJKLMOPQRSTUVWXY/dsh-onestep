@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "css": {
+    "pass": true,
+    "ruleCount": 181,
+    "checks": {
+      "railMiniPosition": "absolute",
+      "railMiniDisplay": "flex",
+      "railScrollBtnRadius": "6px"
+    }
+  },
+  "f1": {
+    "pass": true,
+    "assertions": {
+      "focusMovedToCandidate": true,
+      "noStageUnmount": true,
+      "noStageRemount": true,
+      "stageRootSameNode": true,
+      "stageRootConnected": true,
+      "focusFrameSameNode": true
+    }
+  },
+  "f2": {
+    "pass": true,
+    "assertions": {
+      "focusMovedToB": true,
+      "focusDemoteRecordedForA": true,
+      "noRefReleaseForA": true,
+      "releaseNeverBeforeDemote": true,
+      "noRefRetainForA": true,
+      "aOccurrenceRenderedAfter": true,
+      "aConversationContentRenderedAfter": true,
+      "conversationAWrapperDomSameNode": false
+    }
+  },
+  "pageErrors": 0,
+  "consoleErrors": 0,
+  "generatedAt": "2026-11-19T09:51:52.950Z"
+}

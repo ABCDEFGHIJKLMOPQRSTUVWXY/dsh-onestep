@@ -1,0 +1,23 @@
+{
+  "pluginVersion": "0.7.0",
+  "dshBaseline": "0.2.2-rc.1",
+  "client": {
+    "bytes": 324696,
+    "sha256": "CC3D0F1C11A7C790B993677F61DB8117DB741DA345B577D751AC566D6FF76993"
+  },
+  "reproducible": true,
+  "reproducibleNote": "连续两次 node scripts/build.mjs 产物 sha256 相同",
+  "builder": {
+    "esbuild": "0.25.0",
+    "format": "cjs",
+    "platform": "browser",
+    "target": "chrome120",
+    "externals": 11
+  },
+  "generatedAt": "2026-11-19T10:02:20.942Z",
+  "tarball": {
+    "filename": "dsh-onestep-0.7.0.tgz",
+    "bytes": 95272,
+    "sha256": "65F57DA1F075FDB78DE4EA10DA291D77C4EEA89DFC409E5697458BA68214BC1A"
+  }
+}

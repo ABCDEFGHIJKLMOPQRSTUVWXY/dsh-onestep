@@ -1,0 +1,10 @@
+{
+  "name": "dsh-onestep-pw-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "playwright-core for dsh-onestep P0 browser verification (headless Edge via channel:'msedge'; no Chromium download)",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright-core": "^1.65.0"
+  }
+}

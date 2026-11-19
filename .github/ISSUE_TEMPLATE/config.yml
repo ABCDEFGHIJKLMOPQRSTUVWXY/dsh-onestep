@@ -1,0 +1,5 @@
+# dsh-onestep 的 issue 模板配置。
+# 说明：发布收口时仓库地址/组织名确定后，可在此补充 contact_links
+# （例如安全漏洞私密报告入口指向 GitHub Private Vulnerability Reporting、
+#  使用文档指向 README）。当前不填 URL，避免出现占位链接。
+blank_issues_enabled: false

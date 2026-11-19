@@ -1,0 +1,74 @@
+{
+  "environment": {
+    "dshVersion": "0.2.2-rc.1",
+    "profileKind": "isolated profile",
+    "browser": "headless Edge via playwright-core"
+  },
+  "steps": [
+    {
+      "id": "R0",
+      "pass": true
+    },
+    {
+      "id": "R1",
+      "pass": true
+    },
+    {
+      "id": "R2",
+      "pass": true
+    },
+    {
+      "id": "R3",
+      "pass": true
+    },
+    {
+      "id": "R4",
+      "pass": true
+    },
+    {
+      "id": "R5",
+      "pass": true
+    },
+    {
+      "id": "R6",
+      "pass": true
+    },
+    {
+      "id": "R7",
+      "pass": true
+    },
+    {
+      "id": "R8",
+      "pass": true
+    },
+    {
+      "id": "R9",
+      "pass": true
+    },
+    {
+      "id": "R10",
+      "pass": true
+    }
+  ],
+  "passed": 11,
+  "total": 11,
+  "assertions": {
+    "bootEntriesContainsPlugin": true,
+    "onestepGlobalReady": true,
+    "pageErrors": 0,
+    "uninstallRevertsEntries": true,
+    "noResidue": true
+  },
+  "generatedAt": "2026-11-19T10:02:20.942Z",
+  "finalTarball": {
+    "filename": "dsh-onestep-0.7.0.tgz",
+    "bytes": 95272,
+    "sha256": "65F57DA1F075FDB78DE4EA10DA291D77C4EEA89DFC409E5697458BA68214BC1A",
+    "installCommand": "dsh plugin --profile <isolated-profile> add <tarball>",
+    "installExit": 0,
+    "bundlesContainsPlugin": true,
+    "uninstallExit": 0,
+    "bundlesReverted": true,
+    "note": "最终 tarball 的 CLI 安装/卸载复验通过；浏览器内舞台进入/退出/卸载冒烟在同一代码产物（client.js 同 sha256）上完成，差异仅文档与元数据。"
+  }
+}
