@@ -22,7 +22,7 @@ dsh-onestep 是一个 **持久客户端插件包**：不改 DSH 本体、不 pat
 - **宿主半没有业务逻辑**。`apply` 有一个幂等守卫（同一 fiber 重复 apply 时跳过），并用 `ctx.effect` 注册 dispose；生命周期事件只写 console，只有在 patch 配置 `probeLog` 或环境变量 `ONESTEP_P0_LOG` 存在时才追加 JSONL 文件。这让「插件确实被宿主装载/卸载」有宿主侧一手日志，而无需改动任何界面。
 - **浏览器半的产物形状由宿主 loader 决定**：顶层必须是 `window.__ModuleLoader__.load({ id: 'dsh-onestep', factory(require) { ... } })`，`id` 必须等于包名；`factory` 的返回值就是 Cordis 插件对象（`{ inject, apply }`）。所有副作用都发生在 `factory` 执行与 `apply` 内。
 - **构建可逐字节复现**：`scripts/build.mjs` 把 esbuild 固定为 `cjs` / `chrome120` / 不压缩 / 11 项宿主模块 external，并在产物外包一层 loader banner/footer。2026-11-19 历史审查产物为 `client.js` **324696 B / sha256 `CC3D0F1C11A7C790B993677F61DB8117DB741DA345B577D751AC566D6FF76993`**；同一命令重复构建得到同一哈希。
-- **发布包白名单**：`package.json` 的 `files` 只有 5 项，加上 `package.json` 自身构成 6 文件 tarball（`dsh-onestep-1.0.0.tgz`，**101794 B / sha256 `C29512648C93F7E7372672D3BB1E4BAAA78E62E75720BCA45976C3F57F2742AC`**）。
+- **发布包白名单**：`package.json` 的 `files` 只有 5 项，加上 `package.json` 自身构成 6 文件 tarball（`dsh-onestep-1.0.0.tgz`，**101808 B / sha256 `0B9C8D57F37560DEDDCE1ABB298159668E6B97CF107365B04F96BF0EDF5516BF`**）。
 
 ```mermaid
 flowchart LR

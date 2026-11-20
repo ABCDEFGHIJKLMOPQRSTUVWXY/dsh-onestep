@@ -4,6 +4,7 @@
   "description": "Onestep 会话舞台：把 DSH 会话主界面变成「1 个焦点会话 + 最多 12 个候场会话」的多会话舞台。",
   "type": "module",
   "license": "MIT",
+  "author": "Huaxingmo",
   "main": "./index.js",
   "exports": {
     ".": "./index.js",

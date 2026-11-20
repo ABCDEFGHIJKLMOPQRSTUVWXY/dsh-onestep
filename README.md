@@ -392,7 +392,7 @@ DSH 每次 rc 升级都可能移动这些内部结构。升级前请按 [docs/co
 ## 9. 许可
 
 - 本仓库与 npm 包采用 **MIT** 许可证，见 [LICENSE](LICENSE)。
-- 版权声明：`Copyright (c) 2026 dsh-onestep contributors`。
+- 版权声明：`Copyright (c) 2026 Huaxingmo`。
 - 分发时请保留 LICENSE 中的版权与许可声明；`npm pack` 的包内也包含 `LICENSE`。
 - 开发依赖（`esbuild`、`playwright-core` 等）不随包发布，包内运行时只有 `index.js` / `client.js`。
 
