@@ -1,12 +1,12 @@
 # 发布证据索引（dsh-onestep 1.0.0）
 
-> **2026-11-20 版本收口**：仓库已收口到 `1.0.0`。最终树复跑结果：`npm run check` 全绿（190/190 单测、`build:check` 逐字节一致、i18n 75/75、版本范围 PASS、文档 16/16）、`npm run p3:hygiene` 33/33 且脱敏命中 0；当前 `client.js` 为 **347283 B / SHA-256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`**，tarball `dsh-onestep-1.0.0.tgz` 为 **101808 B / SHA-256 `0B9C8D57F37560DEDDCE1ABB298159668E6B97CF107365B04F96BF0EDF5516BF`**；版权主体已定稿为 `Copyright (c) 2026 Huaxingmo`。既有隔离 DSH 服务未运行，本轮的实机端到端与安装演练（G8/G9）未复跑，详见[审查记录](../review/2026-11-20-review.md)。
+> **2026-11-20 版本收口**：仓库已收口到 `1.0.0`。最终树复跑结果：`npm run check` 全绿（190/190 单测、`build:check` 逐字节一致、i18n 75/75、版本范围 PASS、文档 16/16）、`npm run p3:hygiene` 33/33 且脱敏命中 0；当前 `client.js` 为 **347283 B / SHA-256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`**，tarball `dsh-onestep-1.0.0.tgz` 为 **101808 B / SHA-256 `0B9C8D57F37560DEDDCE1ABB298159668E6B97CF107365B04F96BF0EDF5516BF`**；版权主体已定稿为 `Copyright (c) 2026 Huaxingmo`。已在隔离 profile `onestep-g8` 上复跑 G8/G9（安装/卸载/回落、F1/F2/CSS），详见[审查记录](../review/2026-11-20-review.md)。
 
 > 用途：索引 1.0.0 公开发布的门禁证据。证据由 Lead 在发布收口时用固定脚本从可复跑门禁输出汇总生成，归档为**脱敏后的结构化 JSON**；本文件只负责「有哪些证据、怎么读、怎么复跑」，不替代 JSON 本身。
 > 归档位置：`docs/release-evidence/`（随仓库入库）。原始日志、截图、浏览器数据、安装演练中间产物属于本地工作产物，**不入库**。
 > 对应检查表：[发布检查表](checklist.md)（门禁编号 G1–G11、阻塞项 B1–B4）。
 > 采集基线（2026-11-20）：插件 **1.0.0** / DSH Desktop **0.2.2-rc.1**；构建产物 `client.js` **347283 B / sha256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`**；单测 **190/190**（18 文件）；i18n zh/en 各 **75** 键；发布自查 **33/33**、脱敏命中 **0**。
-> **历史归档说明**：`install-drill.json` 与 `regression.json` 仍是 **0.7.0** 的隔离实例归档（11/11 安装演练、CSS 181 条规则等），本机隔离实例未运行、未在 1.0.0 上复跑，**签署发布前必须重新生成**。其余四个文件已按 1.0.0 最终树重生成。
+> **本轮重生成说明**：`install-drill.json` 与 `regression.json` 已按 **1.0.0** 在隔离 profile `onestep-g8` 上重新生成（安装演练 20/20、F1/F2/CSS 全绿，pageerror 0）；桌面 App 内安装/卸载（B4）仍需人工确认。其余四个文件已按 1.0.0 最终树重生成。
 
 ## 1. 证据文件索引
 
@@ -16,8 +16,8 @@
 | `tests.json` | G4 | `command`、`total`、`pass`、`fail`、`testFiles`、`note`、`generatedAt` | `npm test` = **190/190** pass、0 fail、**18** 个测试文件（自动发现）；新增 15 项针对本轮 8 类修复的回归用例 | `npm test` |
 | `gates.json` | G5、G6、G10、G11、G3、G2 | `engines.{pass,range,satisfies}`、`i18n.{pass,details}`、`releaseHygiene.{pass,checks,hits}`、`docsLinks.{pass,checks}`、`syntax.{pass,command}`、`build.{pass,reproducible}`、`generatedAt` | engines PASS（矩阵样本全部符合预期）；i18n PASS（zh/en=75、hardcoded=0）；发布自查 **33/33**、未忽略命中 **0**；文档检查 **16/16**（扫描 10 个 Markdown、5 张截图）；语法 exit 0；构建可复现 | `npm run compat:engines`、`npm run i18n:check`、`npm run p3:hygiene`、`node scripts/p2/shots/check-release.mjs`、`node --check client.js` |
 | `pack.json` | G7 | `bytes`、`sha256`、`entries`、`whitelist`、`innerClientSha256`、`matchesRepo`、`filename`、`npmShasum`、`generatedAt` | 6 个文件恰为白名单；包内 `client.js` 哈希 = 仓库文件（`5CA24A6E…4E2B`）；tarball `dsh-onestep-1.0.0.tgz` **101808 B / `0B9C8D57…16BF`** / npm shasum `6f3199d7…` | `npm pack --dry-run --json`；带哈希的核对脚本 [scripts/p2/pack/check-pack.mjs](../../scripts/p2/pack/check-pack.mjs) |
-| `install-drill.json` | G8 | `environment.{dshVersion,profileKind,browser}`、`steps[]`（每步 `id`/`pass`）、`passed`、`total`、`assertions.{bootEntriesContainsPlugin,onestepGlobalReady,pageErrors,uninstallRevertsEntries,noResidue}`、`generatedAt` | **0.7.0 历史归档**：隔离 profile + headless Edge，步骤 11/11 通过；**1.0.0 未复跑**，发布前必须重跑（`window.__ONESTEP__.version` 应为 `1.0.0`） | 按[检查表](checklist.md) G8 的安装/启动/探测/卸载步骤在全新隔离 profile 复跑 |
-| `regression.json` | G9 | `ok`、`css.{pass,ruleCount,checks}`、`f1.{pass,assertions}`、`f2.{pass,assertions}`、`pageErrors`、`consoleErrors`、`generatedAt` | **0.7.0 历史归档**：`ok=true`、CSS 样式表 181 条规则、F1 断言全 true、F2 核心断言全 true、pageErrors/consoleErrors = 0；**1.0.0 未复跑** | 同一隔离实例上复跑定向回归（随 G8 演练执行） |
+| `install-drill.json` | G8 | `environment.{dshVersion,profileKind,browser}`、`steps[]`（每步 `id`/`pass`）、`passed`、`total`、`assertions.{bootEntriesContainsPlugin,onestepGlobalReady,pageErrors,uninstallRevertsEntries,noResidue}`、`generatedAt` | 1.0.0 隔离 profile `onestep-g8` + headless Edge：步骤 **20/20** 通过；boot 条目含 `dsh-onestep`、`__ONESTEP__.version=1.0.0`、可进舞台（1 焦点 + 候场）、退出回落、卸载后条目/全局/DOM/包目录全部清除；pageerror 0 | 按[检查表](checklist.md) G8 的安装/启动/探测/卸载步骤在全新隔离 profile 复跑 |
+| `regression.json` | G9 | `ok`、`css.{pass,ruleCount,checks}`、`f1.{pass,assertions}`、`f2.{pass,assertions}`、`pageErrors`、`consoleErrors`、`generatedAt` | 1.0.0：`ok=true`；F1 提升唯一候场无 `stage.mount`/`stage.unmount`、舞台根节点保持；F2 无 `ref.release`、被降级会话仍渲染；CSS 插件规则 **156** 条（扫描 4700 条）、关键选择器命中且计算样式生效；pageErrors 0、consoleErrors 2（DSH 核心 `/api/changes.summary` 404，控制组同） | 同一隔离实例上复跑定向回归（随 G8 演练执行） |
 
 > 「本轮基线判读」是撰写本索引时（2026-11-20）的最终树实测值，用于核对生成结果是否漂移；**发布签署以最终重跑生成的 JSON 为准**。
 >
@@ -28,8 +28,8 @@
 1. **先对时间**：每个文件都有 `generatedAt`；证据必须晚于最后一次影响产物的变更（代码、`client.js`、打包内文件、版本号、文档）。时间早于变更的证据一律视为过期。
 2. **再对哈希**：`build.json.client.sha256` = 仓库 `client.js` 的 sha256 = `pack.json.innerClientSha256`；`pack.json.sha256` = 实际用于安装演练的 tarball 哈希。三者对不上就不能签署。
 3. **门禁判据**：`gates.json` 中 `engines.pass`、`i18n.pass`、`releaseHygiene.pass`、`docsLinks.pass`、`syntax.pass` 必须全部为 `true`；`i18n.details` 应显示 zh/en 各 75 键、`hardcoded=0`。
-4. **安装演练**：`install-drill.json` 的 `passed` 必须等于 `total`，`assertions` 五项全为 `true`（其中 `pageErrors` 为 0）；当前文件是 0.7.0 归档，1.0.0 签署前必须重生成。
-5. **回归**：`regression.json` 的 `ok` 为 `true`，且 `f1.pass`、`f2.pass`、`css.pass` 均为 `true`；同样需要在 1.0.0 上重跑。
+4. **安装演练**：`install-drill.json` 的 `passed` 必须等于 `total`，`assertions` 五项全为 `true`（其中 `pageErrors` 为 0）；1.0.0 已在隔离 profile 复跑（20/20），桌面 App 内的安装/卸载仍属 B4 人工确认项。
+5. **回归**：`regression.json` 的 `ok` 为 `true`，且 `f1.pass`、`f2.pass`、`css.pass` 均为 `true`（1.0.0 已复跑）。
 6. **一致性**：任何一项与检查表的「通过判据」不一致时，按门禁失败处理——重跑，而不是修改本索引。
 
 ## 3. 复跑方式（发布前必须执行）

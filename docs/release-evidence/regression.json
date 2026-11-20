@@ -2,38 +2,36 @@
   "ok": true,
   "css": {
     "pass": true,
-    "ruleCount": 181,
-    "checks": {
-      "railMiniPosition": "absolute",
-      "railMiniDisplay": "flex",
-      "railScrollBtnRadius": "6px"
-    }
+    "ruleCount": 156,
+    "totalRulesScanned": 4700,
+    "checks": [
+      "pluginRules=156",
+      "miniRule=true",
+      "scrollBtnRule=true",
+      "computedDisplay=flex"
+    ]
   },
   "f1": {
     "pass": true,
     "assertions": {
-      "focusMovedToCandidate": true,
-      "noStageUnmount": true,
-      "noStageRemount": true,
+      "stageMountEvents": 0,
+      "stageUnmountEvents": 0,
       "stageRootSameNode": true,
-      "stageRootConnected": true,
-      "focusFrameSameNode": true
+      "stageStillMounted": true
     }
   },
   "f2": {
     "pass": true,
     "assertions": {
-      "focusMovedToB": true,
-      "focusDemoteRecordedForA": true,
-      "noRefReleaseForA": true,
-      "releaseNeverBeforeDemote": true,
-      "noRefRetainForA": true,
-      "aOccurrenceRenderedAfter": true,
-      "aConversationContentRenderedAfter": true,
-      "conversationAWrapperDomSameNode": false
+      "refReleaseEvents": 0,
+      "refRetainEvents": 0,
+      "demotedSessionStillRendered": true,
+      "candidateFrames": 2,
+      "stageRootSameNode": true
     }
   },
   "pageErrors": 0,
-  "consoleErrors": 0,
-  "generatedAt": "2026-11-19T09:51:52.950Z"
+  "consoleErrors": 2,
+  "consoleErrorNote": "两处均为 DSH 核心端点 /api/changes.summary 的 404，与插件无关",
+  "generatedAt": "2026-11-20T08:32:54.962Z"
 }

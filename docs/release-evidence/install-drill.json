@@ -1,57 +1,114 @@
 {
   "environment": {
     "dshVersion": "0.2.2-rc.1",
-    "profileKind": "isolated profile",
-    "browser": "headless Edge via playwright-core"
+    "profileKind": "隔离 profile onestep-g8（CLI 初始化；bundles = @deepseek-ai/dsh-base + @deepseek-ai/dsh-web-app；安装 dsh-onestep-1.0.0.tgz）",
+    "browser": "headless Edge（playwright-core, channel=msedge）, 1440x900",
+    "server": "loopback 127.0.0.1:4657（隔离实例，非桌面 App、非用户 profile）"
   },
   "steps": [
     {
-      "id": "R0",
-      "pass": true
+      "id": "profile.init",
+      "pass": true,
+      "note": "隔离 profile onestep-g8 由 CLI 初始化（.plugin-manager / package.json / pnpm-workspace.yaml）"
     },
     {
-      "id": "R1",
-      "pass": true
+      "id": "profile.bundles.baseline",
+      "pass": true,
+      "note": "bundles = @deepseek-ai/dsh-base, @deepseek-ai/dsh-web-app"
     },
     {
-      "id": "R2",
-      "pass": true
+      "id": "cli.add",
+      "pass": true,
+      "note": "dsh plugin --profile onestep-g8 add dsh-onestep-1.0.0.tgz → exit 0"
     },
     {
-      "id": "R3",
-      "pass": true
+      "id": "manifest.dependency",
+      "pass": true,
+      "note": "dependencies.dsh-onestep = file:…/dsh-onestep-1.0.0.tgz"
     },
     {
-      "id": "R4",
-      "pass": true
+      "id": "manifest.bundles.autoAdded",
+      "pass": true,
+      "note": "bundles 追加 dsh-onestep（CLI 自动 reconcile）"
     },
     {
-      "id": "R5",
-      "pass": true
+      "id": "node_modules.landing",
+      "pass": true,
+      "note": "profile/node_modules/dsh-onestep 落位（内容寻址硬链接）"
     },
     {
-      "id": "R6",
-      "pass": true
+      "id": "server.start",
+      "pass": true,
+      "note": "隔离 profile 服务启动成功并打印回环 URL"
     },
     {
-      "id": "R7",
-      "pass": true
+      "id": "host.apply",
+      "pass": true,
+      "note": "服务 stdout 出现 [onestep] host.apply version=1.0.0"
     },
     {
-      "id": "R8",
-      "pass": true
+      "id": "boot.entry.present",
+      "pass": true,
+      "note": "boot graph 含 dsh-onestep 条目（rev=0c28d17c92e7）"
     },
     {
-      "id": "R9",
-      "pass": true
+      "id": "boot.bundle.served",
+      "pass": true,
+      "note": "该条目 bundle HTTP 200、347351 B，包含 dsh-onestep 注册与 1.0.0 常量"
     },
     {
-      "id": "R10",
-      "pass": true
+      "id": "boot.plainPath",
+      "pass": true,
+      "note": "/plugins/dsh-onestep/client.js 未在广告路径中 → 404（符合契约）"
+    },
+    {
+      "id": "browser.global",
+      "pass": true,
+      "note": "headless Edge：window.__ONESTEP__.version = 1.0.0"
+    },
+    {
+      "id": "stage.enter",
+      "pass": true,
+      "note": "enterStage(2 会话) → mounted=true、1 焦点 + 2 候场、stage/focus/candidate 几何为正"
+    },
+    {
+      "id": "stage.exit",
+      "pass": true,
+      "note": "exitStage → mounted=false、舞台 DOM=0、官方会话回到舞台外（1）"
+    },
+    {
+      "id": "pageErrors",
+      "pass": true,
+      "note": "pageerror = 0，requestFailures = 0；2 条 console error 均为 DSH 核心 /api/changes.summary 404"
+    },
+    {
+      "id": "server.stop",
+      "pass": true,
+      "note": "按命令行精确匹配停止该 profile 服务，remaining=0"
+    },
+    {
+      "id": "cli.remove",
+      "pass": true,
+      "note": "dsh plugin --profile onestep-g8 remove dsh-onestep → exit 0"
+    },
+    {
+      "id": "manifest.reverted",
+      "pass": true,
+      "note": "bundles 回到 base+web-app、依赖清空、node_modules 条目删除、残留扫描 0"
+    },
+    {
+      "id": "server.restart",
+      "pass": true,
+      "note": "重启后服务 URL 正常，stdout 不再出现 [onestep] host.apply"
+    },
+    {
+      "id": "boot.entry.absent",
+      "pass": true,
+      "note": "boot graph 73 条目、无 dsh-onestep；页面无 __ONESTEP__、无 onestep DOM 残留，官方界面正常"
     }
   ],
-  "passed": 11,
-  "total": 11,
+  "passed": 20,
+  "total": 20,
   "assertions": {
     "bootEntriesContainsPlugin": true,
     "onestepGlobalReady": true,
@@ -59,16 +116,7 @@
     "uninstallRevertsEntries": true,
     "noResidue": true
   },
-  "generatedAt": "2026-11-19T10:02:20.942Z",
-  "finalTarball": {
-    "filename": "dsh-onestep-0.7.0.tgz",
-    "bytes": 95272,
-    "sha256": "65F57DA1F075FDB78DE4EA10DA291D77C4EEA89DFC409E5697458BA68214BC1A",
-    "installCommand": "dsh plugin --profile <isolated-profile> add <tarball>",
-    "installExit": 0,
-    "bundlesContainsPlugin": true,
-    "uninstallExit": 0,
-    "bundlesReverted": true,
-    "note": "最终 tarball 的 CLI 安装/卸载复验通过；浏览器内舞台进入/退出/卸载冒烟在同一代码产物（client.js 同 sha256）上完成，差异仅文档与元数据。"
-  }
+  "consoleErrors": 2,
+  "consoleErrorNote": "两处均为 DSH 核心端点 /api/changes.summary 的 404（同实例 /api/sessions、/api/changes/list 亦 404），与插件无关",
+  "generatedAt": "2026-11-20T08:32:54.962Z"
 }
