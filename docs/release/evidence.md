@@ -6,7 +6,7 @@
 > 归档位置：`docs/release-evidence/`（随仓库入库）。原始日志、截图、浏览器数据、安装演练中间产物属于本地工作产物，**不入库**。
 > 对应检查表：[发布检查表](checklist.md)（门禁编号 G1–G11、阻塞项 B1–B4）。
 > 采集基线（2026-11-20）：插件 **1.0.0** / DSH Desktop **0.2.2-rc.1**；构建产物 `client.js` **347283 B / sha256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`**；单测 **190/190**（18 文件）；i18n zh/en 各 **75** 键；发布自查 **33/33**、脱敏命中 **0**。
-> **本轮重生成说明**：`install-drill.json` 与 `regression.json` 已按 **1.0.0** 在隔离 profile `onestep-g8` 上重新生成（安装演练 20/20、F1/F2/CSS 全绿，pageerror 0）；桌面 App 内安装/卸载（B4）仍需人工确认。其余四个文件已按 1.0.0 最终树重生成。
+> **本轮重生成说明**：`install-drill.json` 与 `regression.json` 已按 **1.0.0** 在隔离 profile `onestep-g8` 上重新生成（安装演练 20/20、F1/F2/CSS 全绿，pageerror 0）；桌面 App 内卸载/重装已由用户确认（B4 ✅）。其余四个文件已按 1.0.0 最终树重生成。
 
 ## 1. 证据文件索引
 
@@ -28,7 +28,7 @@
 1. **先对时间**：每个文件都有 `generatedAt`；证据必须晚于最后一次影响产物的变更（代码、`client.js`、打包内文件、版本号、文档）。时间早于变更的证据一律视为过期。
 2. **再对哈希**：`build.json.client.sha256` = 仓库 `client.js` 的 sha256 = `pack.json.innerClientSha256`；`pack.json.sha256` = 实际用于安装演练的 tarball 哈希。三者对不上就不能签署。
 3. **门禁判据**：`gates.json` 中 `engines.pass`、`i18n.pass`、`releaseHygiene.pass`、`docsLinks.pass`、`syntax.pass` 必须全部为 `true`；`i18n.details` 应显示 zh/en 各 75 键、`hardcoded=0`。
-4. **安装演练**：`install-drill.json` 的 `passed` 必须等于 `total`，`assertions` 五项全为 `true`（其中 `pageErrors` 为 0）；1.0.0 已在隔离 profile 复跑（20/20），桌面 App 内的安装/卸载仍属 B4 人工确认项。
+4. **安装演练**：`install-drill.json` 的 `passed` 必须等于 `total`，`assertions` 五项全为 `true`（其中 `pageErrors` 为 0）；1.0.0 已在隔离 profile 复跑（20/20），桌面 App 内的卸载/重装由用户确认（B4 ✅）。
 5. **回归**：`regression.json` 的 `ok` 为 `true`，且 `f1.pass`、`f2.pass`、`css.pass` 均为 `true`（1.0.0 已复跑）。
 6. **一致性**：任何一项与检查表的「通过判据」不一致时，按门禁失败处理——重跑，而不是修改本索引。
 
