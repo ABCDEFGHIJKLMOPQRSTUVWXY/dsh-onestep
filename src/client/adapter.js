@@ -73,6 +73,8 @@ export const COMPANION = {
     resizeGrip: 'data-onestep-float-resize',
     /** 0.7.0：浮窗缩放进行中标记（仅插件样式/探针使用，不改官方状态）。 */
     resizing: 'data-onestep-resizing',
+    /** 0.7.0：已打开浮窗被再次点击时的高亮闪烁标记（纯展示，不改官方状态）。 */
+    floatFlash: 'data-onestep-float-flash',
   },
   /** 层序（P3-1 实测：浮窗层 60、标签层计划 62–66、官方菜单运行时共享 surface ≈1100）。 */
   layers: { float: 60, tag: 63, menuFallback: 1000 },
@@ -97,6 +99,9 @@ export const COMPANION = {
     floatCaptionFloor: 20,
     /** 0.7.0：收起标签拖动松手吸附阈值（px）。 */
     peekSnap: 10,
+    /** 0.7.0：已打开浮窗被再次点击时的闪烁次数与单次时长（CSS 动画与计时器共用）。 */
+    floatFlashPulses: 2,
+    floatFlashPulseMs: 240,
   },
 }
 
@@ -123,8 +128,9 @@ export const PROBE_FLAG_KEY = 'dsh.onestep.probe'
 export const LIMITS = {
   maxCandidates: 12,
   /** 0.5.0：候场上限 3→6（用户要求解除 3 个限制）；实时缩略仅建议 ≤3，4+ 由自动精简/用户档位控制。 */
-  railLeft: { default: 232, min: 200, max: 320 },
-  railTop: { default: 132, min: 108, max: 220 },
+  /** 0.7.0：候场栏只保留下限，取消最大尺寸限制（用户可自由拖动）；布局求解仍保证焦点窗最小尺寸，窄容器下自动收窄候场栏。 */
+  railLeft: { default: 232, min: 200 },
+  railTop: { default: 132, min: 108 },
   focusMinWidth: 480,
   focusMinHeight: 320,
   cardMinWidth: 200,

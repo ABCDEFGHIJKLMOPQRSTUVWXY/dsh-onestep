@@ -10,7 +10,7 @@
  */
 import { LIMITS, STATE_VERSION, STORAGE_KEY } from './adapter.js'
 
-/** 默认持久状态。候场卡默认「实时缩略画面」（live，官方聊天体等比缩放 + 隐藏输入区）；可切精简卡。 */
+/** 默认持久状态。候场卡默认「静态快照」（live 档：渲染一次官方内容后克隆为静态画面，仅状态变化时重拍）；可切精简卡。 */
 export function defaultStageState() {
   return {
     version: STATE_VERSION,
@@ -36,7 +36,9 @@ export function normalizeState(raw) {
   if (raw.version !== STATE_VERSION) return base
   const railSide = raw.railSide === 'top' ? 'top' : 'left'
   const bounds = railSide === 'left' ? LIMITS.railLeft : LIMITS.railTop
-  const railSize = Math.min(bounds.max, Math.max(bounds.min, Number(raw.railSize) || bounds.default))
+  // 0.7.0：取消最大尺寸限制；只做下限与非法值兜底（超大值在布局求解时按焦点窗最小尺寸自动收窄）。
+  const persistedRail = Number(raw.railSize)
+  const railSize = Number.isFinite(persistedRail) && persistedRail > 0 ? Math.max(bounds.min, Math.round(persistedRail)) : bounds.default
   const candidates = []
   const seen = new Set()
   if (Array.isArray(raw.candidates)) {
@@ -152,10 +154,11 @@ export function setRailSide(state, side) {
   return { ...state, railSide, railSize: bounds.default }
 }
 
-/** 设置候场栏尺寸（px，自动夹到范围内）。 */
+/** 设置候场栏尺寸（px）：0.7.0 起只保留下限，不再限制最大值（自由拖动）。 */
 export function setRailSize(state, px) {
   const bounds = state.railSide === 'top' ? LIMITS.railTop : LIMITS.railLeft
-  const railSize = Math.min(bounds.max, Math.max(bounds.min, Math.round(Number(px) || bounds.default)))
+  const requested = Number(px)
+  const railSize = Number.isFinite(requested) && requested > 0 ? Math.max(bounds.min, Math.round(requested)) : bounds.default
   if (railSize === state.railSize) return state
   return { ...state, railSize }
 }
@@ -167,7 +170,7 @@ export function setRailCollapsed(state, collapsed) {
   return { ...state, railCollapsed: next }
 }
 
-/** 候场窗渲染档位：live（官方聊天体缩略）/ card（lite 状态卡）。 */
+/** 候场窗渲染档位：live（静态快照，状态变化时重拍）/ card（lite 状态卡）。 */
 export function setPreviewMode(state, mode) {
   const previewMode = mode === 'card' ? 'card' : 'live'
   if (previewMode === state.previewMode) return state
@@ -376,21 +379,23 @@ export function createStageStore(options = {}) {
   let state = normalizeState(options.initial || loadPersisted(options.storage) || defaultStageState())
   const listeners = new Set()
   let persistTimer = null
+  let disposed = false
   const persistDelayMs = options.persistDelayMs === undefined ? 300 : options.persistDelayMs
 
   const flushPersist = () => {
     persistTimer = null
+    if (disposed) return
     // persistStage=false 表示「重启不恢复舞台」：仍写入设置本身（否则该选择在重启后失效），
     // 但清空候场 roster，避免下次启动按旧快照恢复舞台。
     savePersisted(options.storage, state.persistStage ? state : { ...state, candidates: [] })
   }
   const schedulePersist = () => {
-    if (!options.storage) return
+    if (disposed || !options.storage) return
     if (persistTimer !== null) return
     persistTimer = setTimeout(flushPersist, persistDelayMs)
   }
   const commit = (next) => {
-    if (!next || next === state) return false
+    if (disposed || !next || next === state) return false
     state = next
     for (const listener of Array.from(listeners)) {
       try {
@@ -406,11 +411,12 @@ export function createStageStore(options = {}) {
   return {
     getSnapshot: () => state,
     subscribe: (listener) => {
+      if (disposed) return () => {}
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
     /** 用纯函数更新：传入当前状态，返回新状态（null/相同引用不提交）。 */
-    update: (fn) => commit(fn(state)),
+    update: (fn) => !disposed && commit(fn(state)),
     addCandidate: (sessionId, now) => {
       const result = addCandidate(state, sessionId, now)
       commit(result.state)
@@ -438,6 +444,7 @@ export function createStageStore(options = {}) {
       flushPersist()
     },
     dispose: () => {
+      disposed = true
       if (persistTimer !== null) clearTimeout(persistTimer)
       persistTimer = null
       listeners.clear()

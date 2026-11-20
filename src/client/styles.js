@@ -84,7 +84,7 @@ ${motionTokensCss()}
    若窗口底色不是 bg-base，底部会出现一条割裂的渐变带。 */
 .onestep-frame[data-mode="focus"]{background:var(--dsw-alias-bg-base,#15181c)}
 .onestep-frame[data-mode="focus"] .onestep-body{background:var(--dsw-alias-bg-base,#15181c)}
-/* 候场卡实时缩略：官方聊天体按逻辑宽度渲染后整体等比缩放，避免在 232px 逻辑宽度下重排导致布局崩坏 */
+/* 候场卡静态快照：官方内容按逻辑宽度渲染一次后克隆为静态画面，整体等比缩放，避免在 232px 逻辑宽度下重排导致布局崩坏 */
 .onestep-thumb{position:absolute;inset:0;overflow:hidden;background:var(--dsw-alias-bg-base,#15181c)}
 .onestep-thumb-content{position:absolute;left:0;top:0;transform-origin:top left;pointer-events:none}
 /* 候场栏 ↔ 焦点窗 可拖拽分隔条（比例调整） */
@@ -221,6 +221,11 @@ ${motionTokensCss()}
 .onestep-float-resize-grip[data-dir="se"]{bottom:0;right:0;width:12px;height:12px;cursor:nwse-resize}
 [data-dockkit-float][data-onestep-resizing]{user-select:none}
 [data-dockkit-float][data-onestep-resizing] *{cursor:inherit}
+/* 0.7.0：已打开浮窗被再次点击时闪烁两下（纯展示；层级抬升由官方 focus 完成） */
+[data-dockkit-float][data-onestep-float-flash]::after{content:'';position:absolute;inset:0;z-index:7;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:inset 0 0 0 2px var(--dsw-alias-state-business-primary,#4c8dff);animation:onestep-float-flash 240ms ease-out 2}
+@keyframes onestep-float-flash{0%{opacity:0}35%{opacity:1}100%{opacity:0}}
+:root[data-onestep-motion="reduced"] [data-dockkit-float][data-onestep-float-flash]::after{animation:none;opacity:1}
+@media (prefers-reduced-motion:reduce){[data-dockkit-float][data-onestep-float-flash]::after{animation:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.onestep-peek-tag,.onestep-peek-label,.onestep-peek-grip{transition:none}}
 /* P4-2：reduced 双路径（属性 = 插件设置；media = 系统）+ View Transitions 伪元素规则 */
 :root[data-onestep-motion="reduced"]{${motionReducedCss()}}

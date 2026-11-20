@@ -1,0 +1,2 @@
+# Keep the generated bundle byte-identical on Windows and Linux checkouts.
+client.js text eol=lf

@@ -1,6 +1,8 @@
 # 架构与实现原理
 
-> 适用版本：**dsh-onestep 0.7.0**；基线 DSH Desktop **0.2.2-rc.1**。
+> **2026-11-20 本轮更新**：190/190 单测、构建一致性、i18n、版本范围、文档检查及发布自查已通过。当前 `client.js` 为 347283 B / SHA-256 `3B575E4DF04A4274FBF29FC0D43D33CD6804FEE19954DFAF48B813CC7F458148`。详见 [审查与优化记录](review/2026-11-20-review.md)。既有隔离 DSH 服务未运行，本轮未复跑实机端到端与安装演练；旧发布证据仍须重生成。
+
+> 适用版本：**dsh-onestep 1.0.0**；基线 DSH Desktop **0.2.2-rc.1**。
 > 本文面向想理解实现、参与维护、或在 DSH rc 升级时定位契约改动的读者。
 > 相关文档：[README](../README.md) · [文档索引](./README.md) · [使用手册](./user-guide.md) · [兼容性与 rc 升级契约](./compatibility.md) · [发布前审查报告](./review/0.7.0-pre-release.md)
 
@@ -12,19 +14,19 @@ dsh-onestep 是一个 **持久客户端插件包**：不改 DSH 本体、不 pat
 |---|---|---|---|
 | 宿主半（Node 侧） | `index.js` | ESM 模块，导出 `inject` 与 `apply(ctx)` | 只做「装载事实」探针：记录 apply/dispose 生命周期，不注册任何面向用户的能力 |
 | 浏览器半（页面侧） | `client.js` | CJS bundle，由 `scripts/build.mjs` 从 `src/client/**` 生成 | 全部产品能力：舞台、窗口、候场、伴生浮窗、动效、持久化 |
-| 浏览器半源码 | `src/client/**` | 22 个 ES 模块 | 见 §11 模块职责表 |
+| 浏览器半源码 | `src/client/**` | ES 模块 | 见 §11 模块职责表 |
 | profile 挂载 | `cordis.patch.yml` | bundle patch | 把本包 `insert` 进 profile 的 loader 树 |
 
 几个关键事实：
 
 - **宿主半没有业务逻辑**。`apply` 有一个幂等守卫（同一 fiber 重复 apply 时跳过），并用 `ctx.effect` 注册 dispose；生命周期事件只写 console，只有在 patch 配置 `probeLog` 或环境变量 `ONESTEP_P0_LOG` 存在时才追加 JSONL 文件。这让「插件确实被宿主装载/卸载」有宿主侧一手日志，而无需改动任何界面。
 - **浏览器半的产物形状由宿主 loader 决定**：顶层必须是 `window.__ModuleLoader__.load({ id: 'dsh-onestep', factory(require) { ... } })`，`id` 必须等于包名；`factory` 的返回值就是 Cordis 插件对象（`{ inject, apply }`）。所有副作用都发生在 `factory` 执行与 `apply` 内。
-- **构建可逐字节复现**：`scripts/build.mjs` 把 esbuild 固定为 `cjs` / `chrome120` / 不压缩 / 11 项宿主模块 external，并在产物外包一层 loader banner/footer。0.7.0 产物为 `client.js` **324696 B / sha256 `CC3D0F1C11A7C790B993677F61DB8117DB741DA345B577D751AC566D6FF76993`**；同一命令重复构建得到同一哈希。
-- **发布包白名单**：`package.json` 的 `files` 只有 5 项，加上 `package.json` 自身构成 6 文件 tarball（`dsh-onestep-0.7.0.tgz`，**95272 B / sha256 `65F57DA1F075FDB78DE4EA10DA291D77C4EEA89DFC409E5697458BA68214BC1A`**）。
+- **构建可逐字节复现**：`scripts/build.mjs` 把 esbuild 固定为 `cjs` / `chrome120` / 不压缩 / 11 项宿主模块 external，并在产物外包一层 loader banner/footer。2026-11-19 历史审查产物为 `client.js` **324696 B / sha256 `CC3D0F1C11A7C790B993677F61DB8117DB741DA345B577D751AC566D6FF76993`**；同一命令重复构建得到同一哈希。
+- **发布包白名单**：`package.json` 的 `files` 只有 5 项，加上 `package.json` 自身构成 6 文件 tarball（`dsh-onestep-1.0.0.tgz`，**101794 B / sha256 `C29512648C93F7E7372672D3BB1E4BAAA78E62E75720BCA45976C3F57F2742AC`**）。
 
 ```mermaid
 flowchart LR
-  SRC["src/client/** 22 个模块"] --> BUILD["scripts/build.mjs<br/>esbuild cjs / chrome120"]
+  SRC["src/client/**"] --> BUILD["scripts/build.mjs<br/>esbuild cjs / chrome120"]
   BUILD --> BUNDLE["client.js<br/>__ModuleLoader__.load factory"]
   PKG["cordis.patch.yml + package.json<br/>dsh.bundle / dsh.client"] --> PROFILE["profile loader 树"]
   BUNDLE --> PROFILE
@@ -166,28 +168,28 @@ sequenceDiagram
 
 其它响应式行为：
 
-- **候场栏比例**：8px 分割线可指针拖动（rAF 合并提交，每帧最多一次 store 更新）；键盘可用 ↑↓/←→ 每次 8px、Shift 24px、Home/End 到边界；尺寸按方向夹在 `railLeft: 200–320（默认 232）` / `railTop: 108–220（默认 132）`。
+- **候场栏比例（0.7.0 起自由尺寸）**：8px 分割线可指针拖动（rAF 合并提交，每帧最多一次 store 更新）；键盘可用 ↑↓/←→ 每次 8px、Shift 24px、Home 到最小值、End 到当前舞台最大可用值；只保留下限 `railLeft: 200（默认 232）` / `railTop: 108（默认 132）`，**无固定上限**——求解时上限由焦点窗最小尺寸动态决定（`width/height - inset - gap - focusMin`），超宽/超高值在该分支自动收窄。
 - **收起候场栏**：收起后只剩 40px 边条，显示各候场状态点与序号；手柄是原生按钮（`aria-expanded`），状态持久化。收起态边条被抬到焦点窗之上，避免被焦点窗覆盖。
 - **候场滚动**：超出可视容量时滚轮只在指针位于候场栏内时拦截；候场栏底部提供「上一组/下一组」翻页按钮（键盘可达）。滚动位置不持久化，刷新回到顶部。
 - **焦点窗最小尺寸**：480×320；候场卡最小 200×108。
 - 舞台切到顶部栏时，焦点窗高度扣除栏高与间距；切到左栏时宽度扣除栏宽、8px 分隔与间距。
 
-## 5. 候场卡：实时缩略与自动精简
+## 5. 候场卡：静态快照与自动精简
 
-### 5.1 实时缩略（live）
+### 5.1 静态快照（live 档）
 
-候场卡默认不是截图，而是**官方聊天体的一份实时 occurrence**：
+候场卡默认不再持续渲染官方聊天体，而是**渲染一次后克隆成静态画面**（0.7.0 用户要求：「完整后场的缩略改成静态图片，只有在状态改变时才更新」）：
 
-- 每张卡外包 `SessionProvider`（会话引用见 §3.2），内容为官方 `conversation.content` occurrence；卡内把内容按逻辑宽度约 560px 渲染后整体 `transform: scale()` 缩放，缩放比 `clamp(rect.w / 560, 0.12, 1)`，这样 232px 宽的卡里不会发生 232px 级的重排崩坏，看到的仍是缩小版真实界面。
-- 卡内隐藏官方 composer（CSS 对官方输入区 DOM 槽标记做 `display:none`，标记缺失时退化为纯展示兜底），内容容器包 `inert`，不可输入；整卡可点击提升为焦点。
-- 卡高扣除 32px chrome 后计算缩放内容高度；卡的外壳、chrome、状态点、气泡由插件自绘。
-- **虚拟化**：滚出候场栏可视区的卡自动降为精简卡（不挂官方聊天体），滚入后恢复 live；因此 12 个候场不会同时挂 12 份官方聊天体。
-- **挂载时机**：换焦后刚被降级的窗口先按精简卡渲染，等焦点内容首帧就绪（或 320ms 兜底），并且**等动效结束 + 空闲时**才挂 live 缩略，避免在 VT morph 期间挂载重内容造成主线程长任务（详见 §7）。
+- **快照管线**（`preview-cache.js` + `CandidatePreview`）：在卡内隐藏宿主挂载官方 `conversation.content` occurrence（`visibility:hidden`，仍参与布局）→ 等 `[data-conversation-content]` 有尺寸 → 再等 `innerHTML` 长度稳定（约 220ms 两拍，避免拍到空白壳/未补全历史）→ 克隆进缓存 → **立刻卸载隐藏 occurrence**。卡片之后只渲染静态 HTML，不再持有官方内容订阅、事件或 live 聊天体。
+- **尺寸（contain）**：快照按固定逻辑宽（560–720px）渲染；展示时用 `fitSnapshot` 取 `min(内容盒宽/快照宽, 内容盒高/快照高)` 等比缩放并居中，**整张快照始终完整可见**（比例不一致时留白，不裁切）；卡片/候场栏尺寸变化只缩放快照，不重排、不重拍。内容盒已扣除卡片 1px 边框与 chrome 高度。
+- **更新条件**：状态签名 `previewStatusKey` = `blank / awaitingFirstTurn / displayTitle / running / completionUnread / pendingInteraction.kind`。签名不变就不重拍——流式输出、相对时间变化不会更新画面；完成/待处理/标题变化时才重拍。新快照完成前旧快照继续展示。
+- **调度**：`createCaptureScheduler` 串行 + 空闲启动，一次只挂载一张官方内容、间隔 140ms，避免多张同帧挂载叠加长任务；换焦动画期间（`deferredLiveIds`）先显示精简卡或旧快照。
+- **已知成本**：首次预览与状态变化各需要一次官方内容挂载（约 0.15–0.4s/卡，串行），抓取完成前显示精简卡；滚动/拖宽/悬停/换焦期间不再发生挂载。快照是静态 DOM 克隆而非位图。
 - 状态反馈：候场会话完成未读 → 卡边框双脉冲闪烁（2×600ms，`data-flash` 自清）；等待批准/回答/计划确认 → 卡底部的琥珀色气泡，点击气泡提升为焦点；`aria-live` 播报。
 
 ### 5.2 精简卡（card）
 
-- 档位由 `previewMode`（`live` | `card`）控制，用户可在焦点窗「…」菜单手动切换并持久化。
+- 档位由 `previewMode`（`live` = 静态快照 | `card` = 精简卡）控制，用户可在焦点窗「…」菜单手动切换并持久化。
 - 精简卡显示标题、状态、最近提问相对时间与「点击提升」提示，不挂官方聊天体，开销最低。
 - **生效档位 = 用户偏好 + 自动降级**：自动降级激活时只覆盖渲染结果（`effectivePreviewMode`），**不写回**用户保存的偏好；下次启动仍是用户选择的档位。
 
@@ -232,7 +234,7 @@ sequenceDiagram
 
 1. 能力自检：`openResource/openTab/active/isExpanded/toggleExpanded/focus/float/dock` 等实例成员必须存在；不满足则不包装、只日志，官方右栏行为不变。
 2. 包装只对「没有显式放置意图」的调用生效：调用方传了 `destination/paneId/preferNewPane/replaceTab` 任一字段即直通；右栏已展开时也直通（尊重用户手动展开的右栏）。
-3. 重定向算法：`original.apply(svc, args)`（官方错误原样抛）→ **在 `float()` 之前** `svc.active()` 取 tabId（`float` 之后的 active 可能被官方 settle 补种的 guide 抢走）→ 已被管理则 `focus` → 否则分配槽位并 `svc.float(tabId, rect)` → 若本次打开把右栏展开了则 `toggleExpanded()` 收起。
+3. 重定向算法：`original.apply(svc, args)`（官方错误原样抛）→ **在 `float()` 之前** `svc.active()` 取 tabId（`float` 之后的 active 可能被官方 settle 补种的 guide 抢走）→ 已被管理时：若该浮窗处于**收起态**则由 policy 的 `onRevealManaged(record)` 走单窗恢复（清除 peek/inert/transform、更新状态、聚焦内容，不再重复 focus），未收起则先由 policy 的 `onFocusManaged(record)` 高亮闪烁两下（纯 CSS 标记，不改官方状态），再 `focus` 抬升到最上层 → 否则分配槽位并 `svc.float(tabId, rect)` → 若本次打开把右栏展开了则 `toggleExpanded()` 收起。
 4. 包装自身的后续步骤失败只记日志、结果留在官方右栏；卸载时校验「当前方法仍是我们的 wrapper」再 `delete` 还原，避免抹掉其它插件的包装。
 
 ### 6.3 槽位与满槽策略
@@ -272,7 +274,12 @@ sequenceDiagram
   W->>S: original.apply
   W->>S: active()（float 前取 tabId）
   alt 已管理
-    W->>S: focus(tabId)
+    opt 该浮窗已收起
+      W->>ST: onRevealManaged 单窗展开
+      W->>S: 恢复可见 + focus(tabId)
+    else 仍可见
+      W->>S: focus(tabId)
+    end
   else 未管理
     W->>F: allocate(当前 managed 浮窗)
     F-->>W: slot + rect（满槽则 evict 最久未聚焦）
@@ -388,7 +395,7 @@ stateDiagram-v2
 版本迁移与规范化：
 
 - `dsh.onestep.v1` 的 v1/v2 负载会被迁移到 v3（保留 roster 与布局设置，`previewMode` 统一迁移为 `live`）；版本不符或无法解析直接回默认，不抛错。
-- 所有读取都先过 `normalizeState`：railSide 归一、railSize 夹取、候选去重/截断到 12、枚举回默认；坏存储不会让插件崩溃。
+- 所有读取都先过 `normalizeState`：railSide 归一、railSize 只夹下限（0.7.0 起不设上限，非法/非有限值回默认）、候选去重/截断到 12、枚举回默认；坏存储不会让插件崩溃。
 - `persistStage=false`（「重启不恢复舞台」）时**仍写入该设置本身**，但候场 roster 写空，避免下次启动按旧快照恢复舞台。
 - 浮窗状态按会话隔离，单会话最多记录 8 条浮窗元数据（防御坏存储）；`peek` 不跨刷新（载入时一律恢复为可见），形态保留。
 - 不写任何会话内容、不写凭据；日志与持久化都不包含正文。
@@ -447,7 +454,7 @@ flowchart LR
 9. 删除 `window.__ONESTEP__`，写最后一条 `dispose` 日志；
 10. 宿主半的 dispose 复位幂等守卫并记录 `host.dispose`。
 
-卸载后不应残留插件 DOM、样式、全局变量或会话引用。发布前审查记录的少数低频清理项（诊断/测试路径）见[发布前审查报告](./review/0.7.0-pre-release.md)的未修复清单，不阻断 0.7.0。
+卸载后不应残留插件 DOM、样式、全局变量或会话引用。发布前审查记录的少数低频清理项（诊断/测试路径）见[发布前审查报告](./review/0.7.0-pre-release.md)的未修复清单，不阻断 1.0.0。
 
 ## 11. 模块职责表（`src/client/**`）
 
@@ -459,6 +466,7 @@ flowchart LR
 | `store.js` | 舞台持久状态与纯函数变更（候选增删/对账/栏设置/预览档/动效偏好）、自动精简判定、节流持久化 |
 | `layout.js` | 舞台几何纯函数：焦点/候场卡/候场栏矩形、滚动语义、断点建议、布局可用性判定 |
 | `content.js` | 官方 `conversation.content` Factory occurrence 与单窗渲染错误边界 |
+| `quick-new.js` | 官方草稿创建桥；正文只传给宿主，诊断只记录长度与工作区 ID；兼容同步与异步失败 |
 | `status.js` | 会话状态归类与相对时间格式化（纯函数，组件与单测共用） |
 | `feedback.js` | 瞬时反馈：完成闪烁、待处理气泡、aria-live 播报、5s 撤销、toast |
 | `locale.js` | zh/en 文案字典（各 75 键）、状态→文案键映射、最小插值 |
@@ -480,9 +488,9 @@ flowchart LR
 
 | 项 | 当前事实 |
 |---|---|
-| 构建 | `node scripts/build.mjs`；esbuild `cjs` / `chrome120` / 不压缩 / 11 项 external；产物 `client.js` 324696 B / sha256 `CC3D0F1C…76993` |
-| 构建一致性 | `node scripts/build.mjs --check` 只做语法与可构建校验；发布前用产物哈希与仓库文件比对 |
-| 单测 | `npm test`（`node --test`，13 个测试文件）**151/151** |
+| 构建 | `npm run build`；esbuild `cjs` / `chrome120` / 不压缩 / 11 项 external；当前产物与验证结果见 [本轮审查记录](review/2026-11-20-review.md) |
+| 构建一致性 | `npm run build:check` 在内存构建并逐字节比较磁盘产物；缺失或过期即失败，检查不写盘 |
+| 单测 | `npm test` 自动发现 `tests/*.test.mjs`；2026-11-20：190/190 通过 |
 | i18n | `npm run i18n:check`：zh/en 各 75 键、键集一致、无硬编码、插值参数一致 |
 | 语法 | `node --check client.js` 通过 |
 | 契约集中度 | `npm run compat:inventory`：adapter 之外的外部契约字面量必须登记豁免，未登记即失败；adapter 单一源约定见[兼容性文档](./compatibility.md) |

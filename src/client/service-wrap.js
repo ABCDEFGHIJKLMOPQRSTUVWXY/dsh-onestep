@@ -83,7 +83,9 @@ export function isWrapped(service) {
  *
  * @param {object} options
  * @param {() => object|undefined} options.getService 惰性取官方 `sidebarRight` 实例
- * @param {{isEnabled:()=>boolean, isManaged?:(tabId:string)=>boolean, planOpen?:(record:object)=>({rect?:object}|null), onManaged?:(record:object, rect:object)=>void}} options.policy
+ * @param {{isEnabled:()=>boolean, isManaged?:(tabId:string)=>boolean, onRevealManaged?:(record:object)=>boolean, onFocusManaged?:(record:object)=>boolean, planOpen?:(record:object)=>({rect?:object}|null), onManaged?:(record:object, rect:object)=>void}} options.policy
+ *   `onRevealManaged`：本次打开命中的是已管理浮窗且该窗处于收起态时调用；返回 true 表示已展开（消费方应跳过额外 focus）。
+ *   `onFocusManaged`：命中的已管理浮窗已展开（无需展开动作）时调用；用于高亮闪烁提示（层级抬升仍由随后的官方 focus 完成）。
  * @param {(event:string, data?:object|null)=>void} [options.log]
  * @returns {{ok:boolean, reason?:string, missing?:string[], status:()=>object, restore:()=>object}}
  */
@@ -145,9 +147,28 @@ export function installServiceWrap(options) {
       log('wrap.policy.error', { error: errorText(error) })
     }
     if (managed) {
-      // 已在浮窗：官方揭示后补一次聚焦抬升（幂等）。
-      svc.focus(record.id)
-      log('wrap.focus-managed', { method, kind: record.kind || null })
+      // 已在浮窗：收起态先由 policy 展开（恢复可见）；已展开时不再执行展开动作，
+      // 由 policy 高亮闪烁两下，随后官方 focus 负责聚焦并把层级提到最上层（focusTab 对浮窗会 raise）。
+      let revealed = false
+      try {
+        revealed = !!(policy && typeof policy.onRevealManaged === 'function' && policy.onRevealManaged(record))
+      } catch (error) {
+        followUpErrorCount += 1
+        log('wrap.reveal.error', { error: errorText(error) })
+      }
+      if (!revealed) {
+        let highlighted = false
+        try {
+          highlighted = !!(policy && typeof policy.onFocusManaged === 'function' && policy.onFocusManaged(record))
+        } catch (error) {
+          followUpErrorCount += 1
+          log('wrap.focus.highlight.error', { error: errorText(error) })
+        }
+        svc.focus(record.id)
+        log('wrap.focus-managed', { method, kind: record.kind || null, highlighted })
+        return
+      }
+      log('wrap.reveal-managed', { method, kind: record.kind || null })
       return
     }
     let plan = null

@@ -4,7 +4,7 @@
  * 结构（开发文档 §5/§6）：
  *   root 作用域组件（无 session 座位）→ 自声明 onestep.focus（session-maybe 桥）+ onestep.window（session）
  *   焦点窗 = 当前主绑定（桥上报）；候场窗 = StageStore candidates；每个窗口 = SessionProvider(插件 retain 引用) + renderSlot。
- *   候场窗 live 档：官方聊天体 occurrence + inert；card 档：状态卡。
+ *   候场窗 live 档：官方会话内容的静态快照（渲染一次后克隆，仅状态变化时重拍）+ inert；card 档：状态卡。
  *
  * P1 review 修复（对应 issue：舞台覆盖官方左栏 / 候场卡与设计稿不符 / 关闭钮位置与显隐）：
  *   1) .onestep-stage 不再是 absolute:inset 0（会逃逸到 position:relative 的 AppFrame，覆盖 280px 官方左栏），
@@ -20,6 +20,7 @@ import { WindowErrorBoundary } from './content.js'
 import { classifyStatus, formatRelative } from './status.js'
 import { interpolate } from './locale.js'
 import { MOTION, windowName } from './motion.js'
+import { createCaptureScheduler, createPreviewCache, fitSnapshot, previewStatusKey, recaptureDelayMs } from './preview-cache.js'
 
 const useStoreSnapshot = (observable) => React.useSyncExternalStore(observable.subscribe, observable.getSnapshot, observable.getSnapshot)
 
@@ -43,6 +44,231 @@ const WindowSlotContent = React.memo(function WindowSlotContent(props) {
     ),
   )
 })
+
+
+/** 单张候场卡快照落位后的最短静置帧数（等官方虚拟列表/ResizeObserver 稳定再克隆）。 */
+const SNAPSHOT_SETTLE_FRAMES = 2
+/** 内容尺寸就绪后再等一小段，等会话数据（标题/历史）落定，避免把空白壳拍进快照。 */
+const SNAPSHOT_SETTLE_MS = 220
+/** 快照抓取超时：官方内容迟迟没有尺寸时不再等待，保留精简卡。 */
+const SNAPSHOT_TIMEOUT_MS = 2600
+/**
+ * F1（换焦继承快照）体积上限（HTML 字符数）：焦点窗比候场抓取宿主（560–720 逻辑宽）大，
+ * 直接继承的 HTML 可能更大；超过上限时返回 false 走旧的「换焦后重新抓拍」路径，
+ * 避免把超大快照灌进缓存并放大注入（解析+布局）成本。取值约等于 e2e 实测最大快照的 1.4 倍。
+ */
+const MAX_INHERIT_SNAPSHOT_CHARS = 2400000
+const rafOnce = (callback) =>
+  typeof window !== 'undefined' && window.requestAnimationFrame ? window.requestAnimationFrame(callback) : setTimeout(callback, 16)
+
+/**
+ * 候场卡静态快照（0.7.0 用户要求：完整后场缩略改为静态、只在状态变化时更新）。
+ *
+ * 生命周期：
+ *   - 有快照 → 直接渲染静态 HTML（缩放展示，像图片一样随卡片尺寸缩放，不重排）；
+ *   - 无快照 / 状态签名过期 → 显示旧快照（若有）或精简卡，并把「拍快照」任务交给
+ *     Controller 的串行空闲调度器（一次只挂载一张官方内容，避免长任务叠加）；
+ *   - 拍快照：隐藏宿主里挂载官方 occurrence → 等 [data-conversation-content] 有尺寸 →
+ *     再等两帧 → 克隆 innerHTML 进缓存 → 立刻卸载隐藏 occurrence。
+ * 卡片本身不再持有 live occurrence 订阅，滚动/拖宽/换焦时不会触发官方内容反复挂载。
+ */
+function CandidatePreview(props) {
+  const { sessionId, reference, statusKey, width, height, boxWidth, boxHeight, SessionProvider, renderSlot, onWindowError, t, cache, scheduler, deferred, onCaptured, placeholder } = props
+  const [capturing, setCapturing] = React.useState(false)
+  const sourceRef = React.useRef(null)
+  const latest = cache.latest(sessionId)
+  const current = !!(latest && latest.key === statusKey)
+  /** F4：本次抓取持有的调度器 job token；只有真正结束/取消时释放（见 releaseJob）。 */
+  const captureJobRef = React.useRef(null)
+  /** capturing 的同步镜像：effect 清理阶段要读到最新值（清理时 state 仍是上次渲染的快照）。 */
+  const capturingRef = React.useRef(false)
+  capturingRef.current = capturing
+
+  /** F4：释放调度器槽位；只对自己持有的 job 调 done(job)，拿旧 token/重复调用不会误释放。 */
+  const releaseJob = () => {
+    const job = captureJobRef.current
+    if (!job) return
+    captureJobRef.current = null
+    scheduler.done(job)
+  }
+
+  // 状态签名变化 / 无快照时，排队拍快照（deferred 期间先显示已有快照或精简卡）。
+  // F4：首次抓取（无快照）立即入队；已有快照的重拍先防抖 500ms，且同会话距上次成功抓拍 <2500ms 时延后。
+  React.useEffect(() => {
+    if (deferred || current) return undefined
+    if (capturingRef.current || captureJobRef.current) return undefined
+    const snapshot = cache.latest(sessionId)
+    const delayMs = snapshot ? recaptureDelayMs(snapshot.at) : 0
+    let timer = null
+    const start = () => {
+      timer = null
+      if (capturingRef.current || captureJobRef.current) return
+      const job = {
+        run: () => {
+          job.started = true
+          setCapturing(true)
+        },
+      }
+      captureJobRef.current = job
+      scheduler.push(job)
+    }
+    if (delayMs <= 0) start()
+    else timer = setTimeout(start, delayMs)
+    return () => {
+      if (timer !== null) {
+        clearTimeout(timer)
+        timer = null
+      }
+      const job = captureJobRef.current
+      // 只回收「尚未开始执行」的排队任务；已开始的由 finish() 或卸载路径释放（F4）。
+      if (job && !job.started) {
+        captureJobRef.current = null
+        scheduler.remove(job)
+      }
+    }
+  }, [deferred, current, statusKey, sessionId, scheduler, cache])
+
+  // 抓取阶段：等官方内容首帧有尺寸后克隆为静态 HTML，随后卸载隐藏 occurrence。
+  React.useEffect(() => {
+    if (!capturing) return undefined
+    const host = sourceRef.current
+    if (!host) {
+      // 宿主意外缺失（正常路径在提交后必定存在）：结束本次抓取，避免调度器槽位悬挂。
+      releaseJob()
+      setCapturing(false)
+      return undefined
+    }
+    let cancelled = false
+    const startedAt = Date.now()
+    let settleTimer = null
+    const finish = () => {
+      if (cancelled) return
+      cancelled = true
+      let html = ''
+      try {
+        html = host.innerHTML
+      } catch (_error) {
+        html = ''
+      }
+      if (html) {
+        cache.set(sessionId, statusKey, html, width, height)
+        if (onCaptured) onCaptured()
+      }
+      // F4：抓取正常结束才释放调度器槽位（token 校验，重复调用安全）。
+      releaseJob()
+      setCapturing(false)
+    }
+    const tick = () => {
+      if (cancelled) return
+      const content = host.querySelector('[data-conversation-content]')
+      const rect = content ? content.getBoundingClientRect() : null
+      if (rect && rect.width > 2 && rect.height > 2) {
+        // 先等两帧（虚拟列表首帧），再等 mark 稳定：官方内容会在挂载后继续补历史/标题，
+        // 过快克隆会拍到空白壳，导致状态未变却出现「先空后满」的重拍。
+        let frames = 0
+        let lastLength = -1
+        const settle = () => {
+          if (cancelled) return
+          if (Date.now() - startedAt > SNAPSHOT_TIMEOUT_MS) {
+            finish()
+            return
+          }
+          if (frames < SNAPSHOT_SETTLE_FRAMES) {
+            frames += 1
+            rafOnce(settle)
+            return
+          }
+          let length = 0
+          try {
+            length = host.innerHTML.length
+          } catch (_error) {
+            length = 0
+          }
+          if (length > 0 && length === lastLength) {
+            finish()
+            return
+          }
+          lastLength = length
+          settleTimer = setTimeout(settle, SNAPSHOT_SETTLE_MS)
+        }
+        settle()
+        return
+      }
+      if (Date.now() - startedAt > SNAPSHOT_TIMEOUT_MS) {
+        finish()
+        return
+      }
+      rafOnce(tick)
+    }
+    rafOnce(tick)
+    return () => {
+      cancelled = true
+      if (settleTimer !== null) clearTimeout(settleTimer)
+      // F4：这里不再无条件 scheduler.done()。抓取中 statusKey 变化会「取消旧判定 → 立即重跑同一次抓取」，
+      // 此时 job 仍归本组件所有；真正的结束由 finish() 释放、卸载由下方 unmount effect 释放。
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capturing, sessionId, statusKey])
+
+  // F4：卸载时释放仍在占用调度器的抓取任务（避免调度器永久卡住）。
+  React.useEffect(() => () => {
+    releaseJob()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // F1：deferred（刚降级）期间只渲染精简卡——继承来的快照不在这 320ms 内注入（解析+布局约 40–100ms），
+  // 避免把注入成本压进换焦提交/VT 更新回调；延后到 deferred 解除后再显示。
+  const snapshot = deferred ? null : cache.latest(sessionId)
+  const snapshotEl = snapshot
+    ? (() => {
+        // 整张快照按 contain 缩放进卡片内容区：永远完整可见，比例不一致时居中留白。
+        const fit = fitSnapshot(boxWidth, boxHeight, snapshot.width, snapshot.height)
+        return h(
+          'div',
+          { className: 'onestep-thumb', 'data-onestep-snapshot': '1', 'aria-hidden': 'true' },
+          h('div', {
+            className: 'onestep-thumb-content',
+            style: {
+              left: fit.left,
+              top: fit.top,
+              width: snapshot.width,
+              height: snapshot.height,
+              transform: 'scale(' + fit.scale + ')',
+              transformOrigin: 'top left',
+            },
+            dangerouslySetInnerHTML: { __html: snapshot.html },
+          }),
+        )
+      })()
+    : null
+  const sourceEl = capturing
+    ? h(
+        'div',
+        {
+          className: 'onestep-thumb',
+          'data-onestep-snapshot-source': '1',
+          'aria-hidden': 'true',
+          style: { visibility: 'hidden', pointerEvents: 'none' },
+        },
+        h(
+          'div',
+          { ref: sourceRef, className: 'onestep-thumb-content', style: { width, height } },
+          h(WindowSlotContent, {
+            SessionProvider,
+            renderSlot,
+            sessionId,
+            reference,
+            interactive: false,
+            onWindowError,
+            t,
+          }),
+        ),
+      )
+    : null
+
+  if (!snapshotEl && !sourceEl) return placeholder
+  return h(React.Fragment, null, snapshotEl, sourceEl)
+}
 
 /** 完成未读闪烁的高亮窗口（P4-5：动画 2×600ms + 200ms 余量；feedback 层到点自动清）。 */
 const FLASH_MS = MOTION.flashHold
@@ -103,6 +329,11 @@ export function StageRoot(props) {
   const dragSuppressed = () => dragActive || Date.now() - lastDragEndAt.current < 350
   const rows = props.useSessions((state) => state.byId)
   const statusMap = props.useSessionStatus((state) => state)
+  // F1：captureFocusSnapshot 读取「最近一次提交」的目录/状态（只写 ref，不触发渲染；避免把桥函数绑到这两张大表上）。
+  const rowsRef = React.useRef(rows)
+  const statusMapRef = React.useRef(statusMap)
+  rowsRef.current = rows
+  statusMapRef.current = statusMap
   // 快速新建条的工作区 chip（产品报告 §7.8）；root 作用域提供 useWorkspaces，缺失时退化为纯文案。
   const workspaces = props.useWorkspaces ? props.useWorkspaces((state) => state.items) : null
 
@@ -127,6 +358,73 @@ export function StageRoot(props) {
   const pendingComposerFocus = React.useRef(false)
   const splitDrag = React.useRef(null)
   const narrowRef = React.useRef(false)
+  // 0.7.0：候场卡静态快照缓存 + 串行空闲调度（只在状态签名变化时重拍，见 preview-cache.js）。
+  const previewCacheRef = React.useRef(null)
+  if (!previewCacheRef.current) previewCacheRef.current = createPreviewCache({ max: 24 })
+  const captureSchedulerRef = React.useRef(null)
+  if (!captureSchedulerRef.current) captureSchedulerRef.current = createCaptureScheduler({ gapMs: 140 })
+  const [, setPreviewVersion] = React.useState(0)
+  React.useEffect(
+    () => () => {
+      try {
+        captureSchedulerRef.current.dispose()
+      } catch (_error) {
+        /* ignore */
+      }
+      previewCacheRef.current.clear()
+    },
+    [],
+  )
+  /**
+   * F1（换焦继承快照）：把「即将失去焦点」的焦点窗内容同步序列化进快照缓存。
+   * 由 index.js 的 applyFocusReport 在改焦点状态之前调用——此时焦点窗 DOM 仍是旧会话、
+   * 且已挂载真实官方内容，序列化一次（~4–10ms）即可省掉换焦后为「被降级会话」再隐藏挂载一次官方内容（0.15–0.4s）。
+   * 失败返回 false，调用方保持旧行为（换焦后由 CandidatePreview 重新抓拍）。
+   * @param {string} sessionId 即将降级的焦点会话
+   * @returns {boolean} 是否写入快照缓存
+   */
+  const captureFocusSnapshot = React.useCallback((sessionId) => {
+    const id = sessionId === undefined || sessionId === null ? '' : String(sessionId)
+    if (!id) return false
+    try {
+      const stageElement = containerRef.current
+      if (!stageElement || typeof stageElement.querySelector !== 'function') return false
+      const frame = stageElement.querySelector('.onestep-frame[data-mode="focus"]')
+      if (!frame) return false
+      const frameSessionId = frame.getAttribute('data-onestep-window-session')
+      if (frameSessionId && frameSessionId !== id) return false
+      const body = frame.querySelector('.onestep-body')
+      if (!body) return false
+      // 占位内容（0.6.1 慢速点击路径的骨架）不能当快照；没有真实 occurrence 的窗口也不拍。
+      if (body.querySelector('[data-onestep-focus-preview]')) return false
+      if (!body.querySelector('[data-onestep-occurrence]')) return false
+      const width = Math.max(0, Math.round(body.clientWidth))
+      const height = Math.max(0, Math.round(body.clientHeight))
+      if (width < 3 || height < 3) return false
+      let html = ''
+      try {
+        html = body.innerHTML
+      } catch (_error) {
+        return false
+      }
+      if (!html || html.length > MAX_INHERIT_SNAPSHOT_CHARS) return false
+      const row = rowsRef.current ? rowsRef.current[id] : null
+      const key = previewStatusKey(row, statusOf(statusMapRef.current, id))
+      previewCacheRef.current.set(id, key, html, width, height)
+      return true
+    } catch (_error) {
+      return false
+    }
+  }, [])
+
+  React.useEffect(() => {
+    const bridge = props.previewBridge
+    if (!bridge) return undefined
+    bridge.capture = captureFocusSnapshot
+    return () => {
+      if (bridge.capture === captureFocusSnapshot) bridge.capture = null
+    }
+  }, [props.previewBridge, captureFocusSnapshot])
   const quickTick = props.quickSignal ? useStoreSnapshot(props.quickSignal) : 0
   const focusInputTick = props.focusInputSignal ? useStoreSnapshot(props.focusInputSignal) : 0
   /**
@@ -235,6 +533,12 @@ export function StageRoot(props) {
 
   const candidates = (stage.candidates || []).filter((candidate) => candidate.sessionId !== focusId)
   const count = candidates.length
+  const candidateIdKey = candidates.map((candidate) => candidate.sessionId).join('|')
+  // 候场移除/换焦后释放对应快照，避免缓存无限增长；候场瞬时为空（换焦中间态）不清理，等下一次稳定列表。
+  React.useEffect(() => {
+    if (!candidateIdKey) return
+    previewCacheRef.current.retain(candidateIdKey.split('|'))
+  }, [candidateIdKey])
   /**
    * 伴生窗（官方右栏）展开时的几何策略：
    * 右栏 push 会压缩会话主区，若按 stageMinWidth 判定就会把舞台直接退出。
@@ -744,6 +1048,15 @@ export function StageRoot(props) {
     }
     splitDrag.current = null
   }
+  // 0.7.0：候场栏取消最大尺寸限制；End 跳到「当前舞台尺寸下仍保证焦点窗最小尺寸」的最大值。
+  const railMaxFit = (() => {
+    if (!size.width || !size.height) return null
+    const fit = stage.railSide === 'top'
+      ? size.height - LIMITS.gap - LIMITS.focusMinHeight
+      : size.width - LIMITS.railInset - LIMITS.gap - LIMITS.focusMinWidth
+    const min = stage.railSide === 'top' ? LIMITS.railTop.min : LIMITS.railLeft.min
+    return Math.max(min, Math.round(fit))
+  })()
   const onSplitterKeyDown = (event) => {
     const railSide = stage.railSide === 'top' ? 'top' : 'left'
     const bounds = railSide === 'top' ? LIMITS.railTop : LIMITS.railLeft
@@ -757,7 +1070,7 @@ export function StageRoot(props) {
       if (event.key === 'ArrowRight') next = stage.railSize + step
     }
     if (event.key === 'Home') next = bounds.min
-    if (event.key === 'End') next = bounds.max
+    if (event.key === 'End') next = railMaxFit == null ? bounds.min : railMaxFit
     if (next === null) return
     event.preventDefault()
     store.setRailSize(next)
@@ -825,15 +1138,17 @@ export function StageRoot(props) {
     // 0.6.1：换焦的首次提交里，刚被降级的窗口同步按 card 渲染（不等 effect），
     // 否则会在同一次提交里再挂一份官方聊天体，把 VT 回调（点击慢速路径的占位提交）拖长。
     const freshlyDemoted = previousFocusRef.current && previousFocusRef.current !== focusId && previousFocusRef.current === sessionId
-    const live = previewMode === 'live' && !!reference && !deferredLiveIds[sessionId] && !freshlyDemoted && (!frame || frame.visible !== false)
+    // 0.7.0：live 档改为「静态快照」——卡片不挂 live occurrence，只在状态签名变化时重拍（见 CandidatePreview）。
+    const previewLive = previewMode === 'live' && !!reference
     const flash = !!(feedbackState.flash && feedbackState.flash[sessionId] && Date.now() - feedbackState.flash[sessionId] < FLASH_MS)
     const classified = classifyStatus(status, row)
     const title = SESSION_FIELDS.title(row) || t('window.unnamed')
     const bubble = feedbackState.bubble && feedbackState.bubble.sessionId === sessionId ? feedbackState.bubble : null
     // 实时缩略：候选卡固定 √2:1；官方聊天体按逻辑宽度（≈560px）渲染后整体等比缩放，避免 232px 下重排崩坏。
     const candidateChromeH = 32
-    const thumbScale = Math.max(0.12, Math.min(1, rect.w / 560))
-    const thumbW = Math.max(1, Math.round(rect.w / thumbScale))
+    // 静态快照按固定逻辑宽（560–720）渲染再缩放展示：视觉上像图片，卡片尺寸变化时不重排。
+    const thumbW = Math.min(720, Math.max(560, Math.round(rect.w)))
+    const thumbScale = rect.w / thumbW
     const thumbH = Math.max(1, Math.round(Math.max(1, rect.h - candidateChromeH) / thumbScale))
     const style = {
       left: frame && frame.absolute === false ? rect.x - (frame.scrollX || 0) : (railRect ? railRect.x : 0) + rect.x,
@@ -844,13 +1159,19 @@ export function StageRoot(props) {
       // P4-3：同名（sessionId）元素跨快照配对，VT 才能把候场卡 morph 到焦点位。
       '--onestep-vt-name': windowName(sessionId) || 'none',
     }
+    const cardBody = h(
+      'div',
+      { className: 'onestep-card-body' },
+      h('div', null, row && !row.blank ? t('card.recent') + ' ' + formatRelative(SESSION_FIELDS.updatedAt(row)) : t('card.blank')),
+      h('div', { className: 'onestep-card-meta' }, t('bubble.raise')),
+    )
     return h(
       'div',
       {
         key: 'candidate-' + sessionId,
         className: 'onestep-frame',
         'data-mode': 'candidate',
-        'data-preview': live ? 'live' : 'card',
+        'data-preview': previewLive ? 'live' : 'card',
         'data-flash': flash ? '1' : '0',
         'data-pending': bubble ? '1' : '0',
         'data-onestep-window-session': sessionId,
@@ -908,38 +1229,28 @@ export function StageRoot(props) {
       ),
       h(
         'div',
-        { className: 'onestep-body', 'data-inert': live ? '1' : '0', inert: live ? '' : undefined },
-        live
-          ? h(
-              'div',
-              { className: 'onestep-thumb', 'data-onestep-thumb': '1' },
-              h(
-                'div',
-                {
-                  className: 'onestep-thumb-content',
-                  style: {
-                    width: thumbW,
-                    height: thumbH,
-                    transform: 'scale(' + thumbScale + ')',
-                  },
-                },
-                h(WindowSlotContent, {
-                  SessionProvider: props.SessionProvider,
-                  renderSlot: props.renderSlot,
-                  sessionId,
-                  reference,
-                  interactive: false,
-                  onWindowError: props.onWindowError,
-                  t,
-                }),
-              ),
-            )
-          : h(
-              'div',
-              { className: 'onestep-card-body' },
-              h('div', null, row && !row.blank ? t('card.recent') + ' ' + formatRelative(SESSION_FIELDS.updatedAt(row)) : t('card.blank')),
-              h('div', { className: 'onestep-card-meta' }, t('bubble.raise')),
-            ),
+        { className: 'onestep-body', 'data-inert': previewLive ? '1' : '0', inert: previewLive ? '' : undefined },
+        previewLive
+          ? h(CandidatePreview, {
+              sessionId,
+              reference,
+              statusKey: previewStatusKey(row, status),
+              width: thumbW,
+              height: thumbH,
+              // 卡片 1px 边框 + chrome 占位：快照只能放进真实内容盒（否则 contain 后会压边被 overflow 裁掉）。
+              boxWidth: Math.max(1, rect.w - 2),
+              boxHeight: Math.max(1, rect.h - 2 - candidateChromeH),
+              SessionProvider: props.SessionProvider,
+              renderSlot: props.renderSlot,
+              onWindowError: props.onWindowError,
+              t,
+              cache: previewCacheRef.current,
+              scheduler: captureSchedulerRef.current,
+              deferred: !!deferredLiveIds[sessionId] || !!freshlyDemoted,
+              onCaptured: () => setPreviewVersion((value) => value + 1),
+              placeholder: cardBody,
+            })
+          : cardBody,
       ),
       bubble
         ? h('button', {
@@ -1400,7 +1711,7 @@ export function StageRoot(props) {
           'aria-orientation': stage.railSide === 'top' ? 'horizontal' : 'vertical',
           'aria-label': t('a11y.railResize'),
           'aria-valuemin': railBounds.min,
-          'aria-valuemax': railBounds.max,
+          'aria-valuemax': railMaxFit == null ? undefined : railMaxFit,
           'aria-valuenow': Math.round(stage.railSide === 'top' ? railRect.h : railRect.w),
           style: splitterStyle,
           onPointerDown: startSplitDrag,

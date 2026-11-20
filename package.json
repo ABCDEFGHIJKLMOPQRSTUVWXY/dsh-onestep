@@ -1,6 +1,6 @@
 {
   "name": "dsh-onestep",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "description": "Onestep 会话舞台：把 DSH 会话主界面变成「1 个焦点会话 + 最多 12 个候场会话」的多会话舞台。",
   "type": "module",
   "license": "MIT",
@@ -32,7 +32,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:check": "node scripts/build.mjs --check",
-    "test": "node --test tests/store.test.mjs tests/layout.test.mjs tests/content.test.mjs tests/companion.test.mjs tests/i18n.test.mjs tests/service-wrap.test.mjs tests/float-layout.test.mjs tests/float-state.test.mjs tests/float-companion.test.mjs tests/peek-layer.test.mjs tests/float-resize.test.mjs tests/motion.test.mjs tests/styles.test.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm test && npm run build:check && npm run i18n:check && npm run compat:engines && npm run docs:check",
     "i18n:check": "node scripts/p2/check-i18n.mjs",
     "i18n:hotswap": "node scripts/p2/i18n-hotswap.mjs",
     "p2:verify": "node scripts/p2/verify/run-all.mjs",

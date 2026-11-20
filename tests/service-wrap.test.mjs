@@ -196,6 +196,121 @@ test('install：已管理浮窗 → 只 focus 抬升，不再 float', () => {
   wrap.restore()
 })
 
+test('install：已管理且收起 → onRevealManaged 展开并跳过额外 focus（发布前修复）', () => {
+  const service = new FakeSidebar()
+  const revealed = []
+  const wrap = install(service, {
+    isManaged: (tabId) => tabId === 'tab1',
+    onRevealManaged: (record) => {
+      revealed.push(record && record.id)
+      return true
+    },
+    planOpen: () => ({ rect: { x: 0, y: 0, width: 1, height: 1 } }),
+  })
+  service.openResource('dsh-resource://file/session/s/a.md')
+  const methods = service.calls.map((call) => call.method)
+  assert.deepEqual(revealed, ['tab1'])
+  assert.equal(methods.includes('focus'), false) // 展开路径已含聚焦，不再补一次
+  assert.equal(methods.includes('float'), false)
+  assert.equal(wrap.status().followUpErrorCount, 0)
+  wrap.restore()
+})
+
+test('install：已管理但未收起（onRevealManaged=false）→ 仍 focus 抬升', () => {
+  const service = new FakeSidebar()
+  const wrap = install(service, {
+    isManaged: (tabId) => tabId === 'tab1',
+    onRevealManaged: () => false,
+    planOpen: () => ({ rect: { x: 0, y: 0, width: 1, height: 1 } }),
+  })
+  service.openResource('dsh-resource://file/session/s/a.md')
+  const methods = service.calls.map((call) => call.method)
+  assert.equal(methods.includes('focus'), true)
+  assert.equal(methods.includes('float'), false)
+  wrap.restore()
+})
+
+test('install：onRevealManaged 抛错 → 不抛给调用方、计数并回退 focus', () => {
+  const service = new FakeSidebar()
+  const logs = []
+  const wrap = installServiceWrap({
+    getService: () => service,
+    log: (event) => logs.push(event),
+    policy: {
+      isEnabled: () => true,
+      isManaged: (tabId) => tabId === 'tab1',
+      onRevealManaged: () => {
+        throw new Error('reveal boom')
+      },
+      planOpen: () => ({ rect: { x: 0, y: 0, width: 1, height: 1 } }),
+    },
+  })
+  assert.doesNotThrow(() => service.openResource('dsh-resource://file/session/s/a.md'))
+  const methods = service.calls.map((call) => call.method)
+  assert.equal(methods.includes('focus'), true)
+  assert.ok(logs.includes('wrap.reveal.error'))
+  assert.equal(wrap.status().followUpErrorCount, 1)
+  wrap.restore()
+})
+
+test('install：已管理且已展开 → onFocusManaged 高亮后仍 focus 抬升（0.7.0）', () => {
+  const service = new FakeSidebar()
+  const highlighted = []
+  const wrap = install(service, {
+    isManaged: (tabId) => tabId === 'tab1',
+    onRevealManaged: () => false,
+    onFocusManaged: (record) => {
+      highlighted.push(record && record.id)
+      return true
+    },
+  })
+  service.openResource('dsh-resource://file/session/s/a.md')
+  const methods = service.calls.map((call) => call.method)
+  assert.deepEqual(highlighted, ['tab1'])
+  assert.equal(methods.includes('focus'), true) // 层级抬升仍由官方 focus 完成
+  assert.equal(methods.includes('float'), false) // 不重复展开
+  wrap.restore()
+})
+
+test('install：onFocusManaged 抛错 → 不抛给调用方、计数并仍 focus', () => {
+  const service = new FakeSidebar()
+  const logs = []
+  const wrap = installServiceWrap({
+    getService: () => service,
+    log: (event) => logs.push(event),
+    policy: {
+      isEnabled: () => true,
+      isManaged: (tabId) => tabId === 'tab1',
+      onRevealManaged: () => false,
+      onFocusManaged: () => { throw new Error('flash boom') },
+    },
+  })
+  assert.doesNotThrow(() => service.openResource('dsh-resource://file/session/s/a.md'))
+  const methods = service.calls.map((call) => call.method)
+  assert.equal(methods.includes('focus'), true)
+  assert.ok(logs.includes('wrap.focus.highlight.error'))
+  assert.equal(wrap.status().followUpErrorCount, 1)
+  wrap.restore()
+})
+
+test('install：onRevealManaged=true 时不同时触发 onFocusManaged', () => {
+  const service = new FakeSidebar()
+  let focusHook = 0
+  const wrap = install(service, {
+    isManaged: (tabId) => tabId === 'tab1',
+    onRevealManaged: () => true,
+    onFocusManaged: () => {
+      focusHook += 1
+      return true
+    },
+  })
+  service.openResource('dsh-resource://file/session/s/a.md')
+  const methods = service.calls.map((call) => call.method)
+  assert.equal(focusHook, 0)
+  assert.equal(methods.includes('focus'), false)
+  wrap.restore()
+})
+
 test('install：无槽位 / 矩形非法 → 不 float、不收起（结果留在官方右栏）', () => {
   for (const planOpen of [() => null, () => ({ rect: null }), () => ({ rect: { x: 0, y: 0, width: -1, height: 10 } })]) {
     const service = new FakeSidebar()

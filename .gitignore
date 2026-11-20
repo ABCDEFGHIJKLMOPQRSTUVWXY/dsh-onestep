@@ -29,5 +29,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# 临时截图
+# 临时截图/验证报告
 cdp-*.png
+cdp-*.json
+reveal-*.png
+rail-wide*.png
+snapshot-contain*.png

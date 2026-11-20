@@ -291,3 +291,60 @@ test('installFloatResize：未启用或无法提交时不注入/不改官方状�
   assert.equal(float.hasAttribute(RESIZING_ATTR), false)
   controller.dispose()
 })
+
+function resizeFixture() {
+  const { doc, view } = fakeDocument()
+  const { panel, float } = buildPanel()
+  doc.body.appendChild(panel)
+  doc.querySelectorAll = (selector) => (selector === COMPANION.selectors.panel ? [panel] : [])
+  const state = { enabled: true, sessionId: 's1' }
+  const commits = []
+  const controller = installFloatResize({
+    doc,
+    isEnabled: () => state.enabled,
+    getSessionId: () => state.sessionId,
+    getService: () => ({ actionsFor: () => ({ resizeFloat: (...args) => commits.push(args) }) }),
+  })
+  controller.sync()
+  const start = () => {
+    const grip = float.children.find((child) => child.getAttribute(RESIZE_ATTR) === 'e')
+    float.dispatch('pointerdown', { button: 0, pointerId: 7, clientX: 900, clientY: 250, target: grip, preventDefault() {}, stopPropagation() {} })
+    view.fire('pointermove', { pointerId: 7, clientX: 980, clientY: 250 })
+  }
+  return { doc, view, panel, float, state, commits, controller, start }
+}
+
+test('installFloatResize：切会话/关闭舞台/收起/移除浮窗后取消缩放，不提交旧手势', () => {
+  const changes = [
+    (f) => { f.state.sessionId = 's2' },
+    (f) => { f.state.enabled = false },
+    (f) => { f.float.setAttribute(COMPANION.attrs.peek, '1') },
+    (f) => { f.float.remove() },
+  ]
+  for (const change of changes) {
+    for (const syncFirst of [false, true]) {
+      const f = resizeFixture()
+      f.start()
+      change(f)
+      if (syncFirst) f.controller.sync()
+      f.view.fire('pointerup', { pointerId: 7 })
+      assert.deepEqual(f.commits, [], '失效手势不能提交到原会话或新会话')
+      assert.equal(f.float.hasAttribute(RESIZING_ATTR), false)
+      assert.equal(f.float.style.width, '')
+      assert.equal(f.view.listeners.length, 0)
+      f.controller.dispose()
+    }
+  }
+})
+
+test('installFloatResize：官方重渲染移除把手后 sync 补齐八向把手且不重复监听', () => {
+  const f = resizeFixture()
+  f.float.children.find((child) => child.getAttribute(RESIZE_ATTR) === 'e').remove()
+  f.controller.sync()
+  assert.equal(f.float.children.filter((child) => child.hasAttribute(RESIZE_ATTR)).length, 8)
+  assert.equal(f.float.listeners.filter((item) => item.type === 'pointerdown').length, 1)
+  f.start()
+  f.view.fire('pointerup', { pointerId: 7 })
+  assert.equal(f.commits.length, 1)
+  f.controller.dispose()
+})

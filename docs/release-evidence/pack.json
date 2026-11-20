@@ -1,6 +1,6 @@
 {
-  "bytes": 95272,
-  "sha256": "65F57DA1F075FDB78DE4EA10DA291D77C4EEA89DFC409E5697458BA68214BC1A",
+  "bytes": 101794,
+  "sha256": "C29512648C93F7E7372672D3BB1E4BAAA78E62E75720BCA45976C3F57F2742AC",
   "entries": 6,
   "whitelist": [
     "LICENSE",
@@ -10,10 +10,10 @@
     "index.js",
     "package.json"
   ],
-  "innerClientSha256": "CC3D0F1C11A7C790B993677F61DB8117DB741DA345B577D751AC566D6FF76993",
+  "innerClientSha256": "5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B",
   "matchesRepo": true,
-  "generatedAt": "2026-11-19T10:02:20.942Z",
-  "filename": "dsh-onestep-0.7.0.tgz",
-  "npmShasum": "f8195046e16878fd97bbbaec3db3b656b541ac0d",
-  "note": "tarball 由当前仓库树重新打包；包内 client.js 与仓库文件同哈希；安装演练针对同代码产物（client.js sha 一致），仅文档/元数据差异"
+  "generatedAt": "2026-11-20T07:37:02.957Z",
+  "filename": "dsh-onestep-1.0.0.tgz",
+  "npmShasum": "32ca00f2251fc4bf9c91d2714896edcfb253b3d7",
+  "note": "tarball 由 1.0.0 最终仓库树重新打包；包内 client.js 与仓库文件同哈希；安装演练（G8）尚未在 1.0.0 上复跑，install-drill.json 为 0.7.0 历史归档"
 }

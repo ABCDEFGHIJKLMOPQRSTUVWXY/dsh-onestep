@@ -42,11 +42,13 @@ import { createLogger, createProbe } from './probe.js'
 import { createFloatProbe } from './float-probe.js'
 import { installServiceWrap } from './service-wrap.js'
 import { installFloatResize } from './float-resize.js'
+import { createFloatFlash } from './float-flash.js'
+import { startDraft } from './quick-new.js'
 
 export const inject = INJECT
 
 /** 插件版本（与 package.json 保持一致；构建期不读文件）。 */
-const VERSION = '0.7.0'
+const VERSION = '1.0.0'
 
 /**
  * 诊断开关：URL hash `#onestep=no-locale,no-shortcuts,no-entries,no-overlay,no-sessions,no-main`。
@@ -326,6 +328,12 @@ export function apply(ctx) {
   const pickerSignal = createSignal({ visible: false, sessionId: null })
   /** 0.6.1：点击换焦的「占位焦点内容」sessionId（非 null 时焦点窗先渲染轻量占位，真实聊天体在动画期间挂载）。 */
   const focusPreviewSignal = createSignal(null)
+  /**
+   * F1（0.7.1）：换焦继承快照桥。StageRoot 挂载时注册 capture(sessionId)：
+   * 在焦点状态变更前，把即将降级窗口的 DOM 同步序列化进候场快照缓存（省掉换焦后的一次隐藏官方内容挂载）。
+   * 未注册（舞台未挂载/初始化顺序）时为 null，调用方静默跳过。
+   */
+  const previewBridge = { capture: null }
   const sessionsSvc = () => {
     try {
       return ctx.get(SERVICES.sessions)
@@ -822,10 +830,52 @@ export function apply(ctx) {
   })
   floatResizeRef.current = floatResize
 
+  // ---------- 0.7.0 已打开浮窗的再次点击提示 ----------
+  // 点击命中的浮窗已展开时：不再执行展开动作，闪烁两下 + 官方 focus 抬升到最上层。
+  const floatFlash = createFloatFlash()
+
+  /** 在当前焦点会话 panel 内按 tabId 找官方浮窗元素并起播闪烁。 */
+  const flashCompanionFloat = (tabId) => {
+    const sessionId = companionFocusId()
+    if (!sessionId || !tabId) return false
+    const panel = findSessionPanel(sessionId)
+    if (!panel) return false
+    for (const element of panel.querySelectorAll(COMPANION.selectors.float)) {
+      if (element.getAttribute(COMPANION.attrs.content) === String(tabId)) return floatFlash.flash(element)
+    }
+    return false
+  }
+
   /** 包装层 policy（形态/槽位/满槽/managed 记录）；安装与探针 wrap 循环共用。 */
   const companionWrapPolicy = {
     isEnabled: wrapEnabled,
     isManaged: (tabId) => companionFloats().some((item) => item.tabId === String(tabId)),
+    /**
+     * 0.7.0（发布前修复）：再次点击某个「已收起」伴生窗的链接时，展开该浮窗（与点击右缘标签同语义：
+     * 只恢复这一窗、其余保持收起）。返回 true 表示已展开，包装层不再补 focus。
+     */
+    onRevealManaged: (record) => {
+      const tabId = record && record.id ? String(record.id) : ''
+      const sessionId = companionFocusId()
+      if (!sessionId || !tabId) return false
+      const current = sessionStateOf(companionState, sessionId).floats.find((item) => item.tabId === tabId)
+      if (!current || !current.peeked) return false
+      const result = actions.companionRestoreFloat(tabId)
+      return !!(result && result.ok)
+    },
+    /** 命中的已管理浮窗已展开：只高亮闪烁两下（层级抬升由包装层随后的官方 focus 完成）。 */
+    onFocusManaged: (record) => {
+      const tabId = record && record.id ? String(record.id) : ''
+      const sessionId = companionFocusId()
+      if (!sessionId || !tabId) return false
+      const current = sessionStateOf(companionState, sessionId).floats.find((item) => item.tabId === tabId)
+      if (!current || current.peeked) return false
+      // 只刷新最近聚焦时间（供满槽 LRU），不改槽位/形态；官方 focus 负责升到最上层。
+      companionState = persistCompanionState(touchFloat(companionState, sessionId, tabId, Date.now()))
+      const flashed = flashCompanionFloat(tabId)
+      log.log('companion.highlight', { tabId, flashed })
+      return flashed
+    },
     planOpen: () => {
       const sessionId = companionFocusId()
       if (!sessionId) return null
@@ -1361,10 +1411,7 @@ export function apply(ctx) {
       return actions.companionSetMode(next)
     },
     async quickNew(text, workspaceId) {
-      const workspace = uiWorkspace()
-      if (!workspace || typeof workspace.startSession !== 'function') throw new Error('uiWorkspace.startSession missing')
-      workspace.startSession(workspaceId || undefined, { prompt: String(text || ''), whenDraftExists: 'replace' })
-      log.log('quickNew.start', { text: String(text || '').slice(0, 80), workspaceId: workspaceId || null })
+      await startDraft(uiWorkspace(), text, workspaceId, log)
     },
     undo() {
       const state = feedback.getSnapshot()
@@ -1527,6 +1574,20 @@ export function apply(ctx) {
     const next = nextRaw ? String(nextRaw) : null
     const prev = focusSignal.getSnapshot()
     if (prev === next) return
+    // F1（换焦继承快照）：在改焦点状态之前，把即将降级窗口的内容同步序列化进快照缓存。
+    // 此时 DOM 仍是旧焦点（慢速点击路径在 VT 更新回调内、路径 B 在 FocusBridge effect 内），
+    // 命中则换焦后被降级卡直接展示该快照，不再为它隐藏挂载一次官方内容（0.15–0.4s）。
+    const suppressPrevFocus = stageControl.suppressPrevFocus
+    const activeCandidates = store.getSnapshot().candidates.length > 0
+    const willDemote = !!(next && prev && prev !== next && !suppressPrevFocus && activeCandidates && byId()[prev])
+    if (willDemote && typeof previewBridge.capture === 'function') {
+      try {
+        if (previewBridge.capture(prev) === true) log.log('preview.inherit', { id: prev })
+        else log.log('preview.inherit.miss', { id: prev })
+      } catch (error) {
+        log.log('preview.inherit.error', String((error && error.message) || error).slice(0, 160))
+      }
+    }
     focusSignal.set(next)
     log.log('focus.report', { from: prev, to: next })
     if (!next) {
@@ -1645,6 +1706,7 @@ export function apply(ctx) {
               feedback,
               focusSignal,
               focusPreviewSignal,
+              previewBridge,
               quickSignal,
               focusInputSignal,
               dragSignal,
@@ -2312,6 +2374,11 @@ export function apply(ctx) {
         /* ignore */
       }
       floatResizeRef.current = null
+      try {
+        floatFlash.dispose()
+      } catch (_error) {
+        /* ignore */
+      }
       if (motionMediaCleanup) {
         try {
           motionMediaCleanup()

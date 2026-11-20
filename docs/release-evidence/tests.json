@@ -1,9 +1,9 @@
 {
   "command": "npm test",
-  "total": 151,
-  "pass": 151,
+  "total": 190,
+  "pass": 190,
   "fail": 0,
-  "testFiles": 13,
-  "note": "新增 tests/styles.test.mjs（4 条 CSS 结构回归）",
-  "generatedAt": "2026-11-19T10:02:20.942Z"
+  "testFiles": 18,
+  "note": "自动发现 tests/*.test.mjs；本轮新增 15 项回归用例覆盖 8 类修复（浮窗缩放会话绑定/把手重建、快速新建隐私、恢复标记清理、抓取间隔、store 销毁、build 逐字节校验、--only 解析）",
+  "generatedAt": "2026-11-20T07:37:02.957Z"
 }

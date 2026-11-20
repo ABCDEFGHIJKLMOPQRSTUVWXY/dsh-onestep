@@ -132,12 +132,24 @@ test('rain side/size/preview setters clamp and skip no-ops', () => {
   assert.equal(top.railSide, 'top')
   assert.equal(top.railSize, 132)
   assert.equal(setRailSide(top, 'top'), top)
+  // 0.7.0：解除最大尺寸限制，只夹下限
   const wide = setRailSize(top, 9999)
-  assert.equal(wide.railSize, 220)
+  assert.equal(wide.railSize, 9999)
+  const free = setRailSize(top, 640)
+  assert.equal(free.railSize, 640)
   const narrow = setRailSize(top, 1)
   assert.equal(narrow.railSize, 108)
+  assert.equal(setRailSize(top, Number.POSITIVE_INFINITY).railSize, 132)
   assert.equal(setPreviewMode(state, 'card').previewMode, 'card')
   assert.equal(setPreviewMode(state, 'card').previewMode, 'card')
+})
+
+test('railSize 持久化不设上限（0.7.0 解除最大宽度限制）', () => {
+  const payload = serializePersisted(defaultStageState())
+  assert.equal(normalizeState({ ...payload, railSide: 'left', railSize: 900 }).railSize, 900)
+  assert.equal(normalizeState({ ...payload, railSide: 'top', railSize: 400 }).railSize, 400)
+  assert.equal(normalizeState({ ...payload, railSide: 'left', railSize: 0 }).railSize, 232)
+  assert.equal(normalizeState({ ...payload, railSide: 'left', railSize: Number.POSITIVE_INFINITY }).railSize, 232)
 })
 
 test('persistence round trip and corruption tolerance', () => {
@@ -176,6 +188,33 @@ test('createStageStore persists on flush and notifies subscribers', () => {
   unsubscribe()
   store.setPreviewMode('card')
   assert.equal(changes, 1)
+  store.dispose()
+})
+
+test('createStageStore ignores delayed updates and subscriptions after dispose', async () => {
+  const writes = []
+  const storage = { getItem: () => null, setItem: (_key, value) => writes.push(value) }
+  const store = createStageStore({ storage, persistDelayMs: 1 })
+  store.addCandidate('kept', 1)
+  store.flush()
+  const snapshot = store.getSnapshot()
+  store.dispose()
+  let notifications = 0
+  const unsubscribe = store.subscribe(() => { notifications += 1 })
+  // 模拟插件卸载前已排队、卸载后才运行的目录 reconcile 微任务。
+  await Promise.resolve()
+  store.reconcile({ byId: {}, mainId: null })
+  store.addCandidate('late', 2)
+  store.setRailCollapsed(true)
+  let updaterCalled = false
+  assert.equal(store.update(() => { updaterCalled = true; return defaultStageState() }), false)
+  store.flush()
+  await new Promise((resolve) => setTimeout(resolve, 10))
+  assert.equal(updaterCalled, false)
+  assert.equal(store.getSnapshot(), snapshot)
+  assert.equal(notifications, 0)
+  assert.equal(writes.length, 1, '旧实例不可覆盖新实例的持久化状态')
+  unsubscribe()
   store.dispose()
 })
 

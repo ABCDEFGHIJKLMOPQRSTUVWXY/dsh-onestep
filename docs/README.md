@@ -1,6 +1,8 @@
 # dsh-onestep 文档索引
 
-本目录是 **dsh-onestep 0.7.0** 的公开文档入口。所有文档与当前发布版本（DSH 基线 `0.2.2-rc.1`）同步；安装命令与代码事实以仓库当前状态为准，截图位于 `docs/assets/`。
+> **2026-11-20 本轮更新**：190/190 单测、构建一致性、i18n、版本范围、文档检查及发布自查已通过。当前 `client.js` 为 347283 B / SHA-256 `3B575E4DF04A4274FBF29FC0D43D33CD6804FEE19954DFAF48B813CC7F458148`。详见 [审查与优化记录](review/2026-11-20-review.md)。既有隔离 DSH 服务未运行，本轮未复跑实机端到端与安装演练；旧发布证据仍须重生成。
+
+本目录是 **dsh-onestep 1.0.0** 的公开文档入口。所有文档与当前发布版本（DSH 基线 `0.2.2-rc.1`）同步；安装命令与代码事实以仓库当前状态为准，截图位于 `docs/assets/`。
 
 如果你只想先把它跑起来，直接看仓库根目录的 [README.md](../README.md)；本文按「读者是谁」组织其余文档。
 
@@ -23,17 +25,18 @@
 ### 开发、二次开发与排障
 
 1. [docs/architecture.md](architecture.md)：插件形态与装载、自适应接管、状态层、窗口层、浮窗层、动效层与模块地图；
-2. [src/client/](../src/client/)：浏览器半源码（22 个模块，`adapter.js` 是 DSH 契约单一源）；
-3. [tests/store.test.mjs](../tests/store.test.mjs)：node:test 单测入口之一（13 个文件、151 条）；
+2. [src/client/](../src/client/)：浏览器半源码（`adapter.js` 是 DSH 契约单一源）；
+3. [tests/store.test.mjs](../tests/store.test.mjs)：node:test 单测入口之一（自动发现测试文件）；
 4. [scripts/build.mjs](../scripts/build.mjs)：构建脚本（兼容、i18n、验证与发布自查脚本在 `scripts/` 下）；
 5. [docs/review/0.7.0-pre-release.md](review/0.7.0-pre-release.md)：发布前代码审查的发现、修复与二次验证。
 
 ### 发布负责人 / 审计者
 
-1. [docs/release/checklist.md](release/checklist.md)：0.7.0 发布检查表与签署项；
-2. [docs/release/evidence.md](release/evidence.md)：0.7.0 证据索引与可复跑命令；
-3. [docs/review/0.7.0-pre-release.md](review/0.7.0-pre-release.md)：审查结论与残项；
-4. [CHANGELOG.md](../CHANGELOG.md)：版本策略与逐版本变更。
+1. [docs/release/checklist.md](release/checklist.md)：1.0.0 发布检查表与签署项；
+2. [docs/release/evidence.md](release/evidence.md)：1.0.0 证据索引与可复跑命令；
+3. [docs/review/0.7.0-pre-release.md](review/0.7.0-pre-release.md)：0.7.0 发布前审查结论与残项（历史基线）；
+4. [docs/review/2026-11-20-review.md](review/2026-11-20-review.md)：1.0.0 收口前的审查、修复与独立复验记录；
+5. [CHANGELOG.md](../CHANGELOG.md)：版本策略与逐版本变更。
 
 ---
 
@@ -53,7 +56,7 @@
 | [LICENSE](../LICENSE) | 所有人 | MIT 许可证与版权声明 |
 | `docs/assets/`（5 张 PNG + `MANIFEST.json`） | 所有人 | 公开发布截图（隔离 DSH_HOME + 合成会话，无真实使用记录），命名为 `NN-语义.png`；README 引用全部 5 张（02 / 03 / 04 / 08 / 11） |
 | [src/client/](../src/client/) | 开发者 | 浏览器半源码：`adapter` / `store` / `layout` / `stage-root` / `float-*` / `peek-*` / `motion` 等 |
-| [tests/store.test.mjs](../tests/store.test.mjs) | 开发者 | 单测（13 个文件、151 条）：状态机、布局、内容工厂、浮窗、i18n、样式结构等 |
+| [tests/store.test.mjs](../tests/store.test.mjs) | 开发者 | 单测：状态机、布局、内容工厂、浮窗、i18n、样式结构等 |
 | [scripts/build.mjs](../scripts/build.mjs) | 开发者 / 发布负责人 | 构建脚本；兼容/i18n/验证与门禁脚本、`p3/verify/release-hygiene.mjs` 发布自查在 `scripts/` 下 |
 
 ---
@@ -73,7 +76,7 @@
 | 候场会话 | 舞台候场栏里「可看不可输入」的会话；提升后与焦点互换 |
 | 舞台 / stage | 插件接管会话主区后的 1 焦点 + N 候场布局 |
 | 候场栏 | 左侧或顶部的候场卡容器；可拖比例、可收起、可滚动 |
-| 实时缩略 / 精简卡 | 候场卡两种预览档：真实聊天画面缩放显示，或标题/状态/最近提问 |
+| 静态快照 / 精简卡 | 候场卡两种预览档：官方聊天画面渲染一次后的静态快照（状态变化时重拍），或标题/状态/最近提问 |
 | 伴生浮窗 | 舞台内文件/文档/终端/浏览器 tab 在右侧的独立浮窗 |
 | 收起标签 | 浮窗全部收起后右缘的堆叠标签；可逐个恢复、整堆上下拖动 |
 | 适配层 / adapter | `src/client/adapter.js`：插槽名、服务方法、DOM 选择器、存储键与限额的单一来源 |
@@ -100,7 +103,7 @@
 1. **只链接仓库内真实存在的文件**：公开文档不引用未入库的本地材料，避免发布后出现 404。
 2. **命令可直接复制**：涉及本机路径时使用占位符 `<DSH 安装目录>`、`<本仓库目录>`、`<profile>`，不写个人绝对路径。
 3. **事实以当前构建为准**：不写未实测的能力、不写交付时间承诺；已知限制与未实现项如实标注（如「极简档为 v1.1 候选、未实现」）。
-4. **版本号单一来源**：`package.json` 的 `0.7.0` 与宿主半 `index.js` 的版本常量一致；文档中引用版本时以两者为准。
+4. **版本号单一来源**：`package.json` 的 `1.0.0` 与宿主半 `index.js` 的版本常量一致；文档中引用版本时以两者为准。
 5. **截图来自隔离 profile**：发布截图在隔离 profile 中用合成会话截取，不含真实会话标题、token、cookie 或本机路径。
 6. **发布前复查**：按 [docs/release/checklist.md](release/checklist.md) 逐项签署；证据索引见 [docs/release/evidence.md](release/evidence.md)。
 
@@ -108,8 +111,8 @@
 
 ## 6. 版本与状态
 
-- **插件版本**：`dsh-onestep` 0.7.0（首个公开发布版本）；
+- **插件版本**：`dsh-onestep` 1.0.0（首个公开发布版本）；
 - **DSH 基线**：Desktop `0.2.2-rc.1`；支持范围 `>=0.2.2-rc.1 <0.3.0-0 || >=0.2.1-rc.5 <0.2.2-0`；
 - **许可**：MIT，见 [LICENSE](../LICENSE)；
-- **构建产物**：`client.js` 324696 B / sha256 `CC3D0F1C11A7C790B993677F61DB8117DB741DA345B577D751AC566D6FF76993`（由 [scripts/build.mjs](../scripts/build.mjs) 构建，连续构建结果一致）；
-- **tarball**：`dsh-onestep-0.7.0.tgz` 95272 B / sha256 `65F57DA1F075FDB78DE4EA10DA291D77C4EEA89DFC409E5697458BA68214BC1A`，6 个文件。
+- **当前构建产物（2026-11-20）**：`client.js` 347283 B / sha256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`；`build:check` 已验证源码与磁盘产物一致；本轮单测 190/190，真实界面与安装演练未复跑，见 [本轮审查记录](review/2026-11-20-review.md)。
+- **tarball（2026-11-20 重打包）**：`dsh-onestep-1.0.0.tgz` 101794 B / sha256 `C29512648C93F7E7372672D3BB1E4BAAA78E62E75720BCA45976C3F57F2742AC`，6 个文件（白名单一致，包内 `client.js` 与仓库同哈希）；安装演练与 P3/P4 端到端未在本轮复跑，发布前须按检查表重跑 G8/G9。

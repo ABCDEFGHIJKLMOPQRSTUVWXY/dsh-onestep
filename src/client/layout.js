@@ -41,7 +41,9 @@ export function solve(input) {
    */
   const stageMinW = (input.min && input.min.stageW) || LIMITS.stageMinWidth
   const railBounds = railSide === 'left' ? LIMITS.railLeft : LIMITS.railTop
-  const railSize = clamp(Number(input.railSize) || railBounds.default, railBounds.min, railBounds.max)
+  // 0.7.0：取消候场栏最大尺寸限制（用户可自由拖动）；只保留下限，超宽值由下方「焦点窗最小宽度」分支收窄。
+  const requestedRail = Number(input.railSize)
+  const railSize = Math.max(railBounds.min, Number.isFinite(requestedRail) && requestedRail > 0 ? requestedRail : railBounds.default)
 
   const empty = () => ({ focus: { x: 0, y: 0, w: width, h: height }, cards: [], rail: null, scroll: false, degraded: 'none', railSize, visibleCount: 0, contentW: width, contentH: height })
 

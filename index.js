@@ -12,7 +12,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = '0.7.0'
+const VERSION = '1.0.0'
 const TAG = '[onestep]'
 
 /** 幂等守卫：cordis 同一 fiber 只 apply 一次；dispose 后复位。 */

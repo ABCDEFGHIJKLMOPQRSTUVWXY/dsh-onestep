@@ -57,7 +57,11 @@ test('adapter 常量与槽名契约稳定', () => {
   assert.equal(SLOTS.focus, 'onestep.focus')
   assert.equal(SLOTS.rowAction, 'sidebar.workspaces.session.row.action')
   assert.equal(LIMITS.maxCandidates, 12)
-  assert.ok(LIMITS.railLeft.min < LIMITS.railLeft.default && LIMITS.railLeft.default < LIMITS.railLeft.max)
+  assert.ok(LIMITS.railLeft.min < LIMITS.railLeft.default)
+  assert.ok(LIMITS.railTop.min < LIMITS.railTop.default)
+  // 0.7.0：候场栏取消最大尺寸限制（只保留下限）
+  assert.equal('max' in LIMITS.railLeft, false)
+  assert.equal('max' in LIMITS.railTop, false)
 })
 
 test('statusOf / statusesSnapshot 兼容 Map 与普通对象（useSessionStatus 是 Map）', () => {

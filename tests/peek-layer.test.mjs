@@ -5,7 +5,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { applyPeekToElement, glyphForKind, createPeekLayer, defaultPeekTop, minPeekTop, clampPeekTop, snapPeekTop, peekTopRange, PEEK_LAYER_DEFAULT_TOP } from '../src/client/peek-layer.js'
+import { applyPeekToElement, disposePeekMotionTimers, PEEK_RESTORING_ATTR, glyphForKind, createPeekLayer, defaultPeekTop, minPeekTop, clampPeekTop, snapPeekTop, peekTopRange, PEEK_LAYER_DEFAULT_TOP } from '../src/client/peek-layer.js'
 
 function fakeElement(attributes = {}) {
   const attrs = new Map(Object.entries(attributes).map(([key, value]) => [key, String(value)]))
@@ -76,6 +76,26 @@ test('applyPeekToElement：还原移除全部注入，位置/状态不受污染'
 test('applyPeekToElement：非法元素不抛', () => {
   assert.doesNotThrow(() => applyPeekToElement(null, true))
   assert.doesNotThrow(() => applyPeekToElement({}, true))
+})
+
+test('applyPeekToElement：重复恢复、再次收起与卸载都清理恢复动画标记', () => {
+  for (const finish of [
+    (element) => applyPeekToElement(element, false),
+    (element) => applyPeekToElement(element, true),
+    () => disposePeekMotionTimers(),
+  ]) {
+    const element = fakeElement({ 'data-dockkit-content': 'tab2' })
+    element.getBoundingClientRect = () => ({ width: 300, height: 200 })
+    try {
+      applyPeekToElement(element, true)
+      applyPeekToElement(element, false)
+      assert.equal(element.getAttribute(PEEK_RESTORING_ATTR), '1')
+      finish(element)
+      assert.equal(element.getAttribute(PEEK_RESTORING_ATTR), null)
+    } finally {
+      disposePeekMotionTimers()
+    }
+  }
 })
 
 test('createPeekLayer：setItems 归一化/订阅通知/snapshotStats；无 DOM 环境不抛', () => {

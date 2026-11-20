@@ -55,3 +55,10 @@ test('CSS：0.7.0 审查发现的 12 个选择器都作为规则存在', () => {
   })
   assert.deepEqual(missing, [], '缺少规则：' + JSON.stringify(missing))
 })
+test('CSS：0.7.0 再次点击高亮规则齐备（两下动画 + reduced 静态降级）', () => {
+  assert.ok(CSS.includes('@keyframes onestep-float-flash'))
+  assert.ok(CSS.includes('[data-dockkit-float][data-onestep-float-flash]::after'))
+  assert.ok(CSS.includes('animation:onestep-float-flash 240ms ease-out 2'))
+  assert.ok(CSS.includes(':root[data-onestep-motion="reduced"] [data-dockkit-float][data-onestep-float-flash]::after'))
+  assert.ok(CSS.includes('@media (prefers-reduced-motion:reduce){[data-dockkit-float][data-onestep-float-flash]::after{animation:none;opacity:1}}'))
+})

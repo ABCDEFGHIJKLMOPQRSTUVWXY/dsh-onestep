@@ -148,6 +148,11 @@ export function createProbe(deps) {
       actions.setRailCollapsed(collapsed)
       return snapshot()
     },
+    /** 0.7.0 验证：直接设置候场栏尺寸（自由宽度 e2e 用；生产路径是拖动分隔条）。 */
+    setRailSize: (px) => {
+      store.setRailSize(px)
+      return snapshot()
+    },
     toggleRailCollapsed: () => {
       actions.setRailCollapsed(!store.getSnapshot().railCollapsed)
       return snapshot()

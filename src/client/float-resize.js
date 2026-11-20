@@ -1,7 +1,7 @@
 /**
  * 浮窗边缘缩放（0.7.0）：给 P3 伴生浮窗（官方 dockkit 浮窗 DOM）加 8 向缩放把手。
  *
- * 背景（docs/p3-plan.md §5.10 / §4.4）：
+ * 背景（docs/architecture.md §6.4）：
  * - 官方浮窗只有右下角一个 20×20 缩放角（`.floatResize`，手势固定左上角、只改宽高）；
  * - 用户反馈「只能在右下角调整大小」，需要拖动任意边缘/角调整；
  * - 官方服务面没有编程 move/resize（`ISidebarRight` 无此成员），因此：
@@ -297,12 +297,12 @@ export function installFloatResize(deps = {}) {
             const removed = Array.prototype.slice.call(mutation.removedNodes || [])
             const added = Array.prototype.slice.call(mutation.addedNodes || [])
             const removedGrips = removed.some((node) => node && node.nodeType === 1 && node.hasAttribute && node.hasAttribute(RESIZE_ATTR))
-            const addedFloats = added.some(isFloatNode)
+            const changedFloats = added.some(isFloatNode) || removed.some(isFloatNode)
             if (removedGrips) {
               scheduleSync()
               return
             }
-            if (addedFloats || isFloatNode(target)) {
+            if (changedFloats || isFloatNode(target)) {
               scheduleSync()
               return
             }
@@ -348,7 +348,13 @@ export function installFloatResize(deps = {}) {
   }
 
   const ensureGrips = (element) => {
-    if (!element || entries.has(element)) return
+    if (!element) return
+    const entry = entries.get(element)
+    if (entry) {
+      if (entry.grips.every((grip) => element.contains(grip))) return
+      // 官方重渲染可能删掉注入节点；同时重建监听，避免缺边或重复响应。
+      removeGrips(element)
+    }
     const grips = makeGrips(element)
     if (!grips) return
     const onPointerDown = (event) => onGripPointerDown(event, element)
@@ -378,9 +384,17 @@ export function installFloatResize(deps = {}) {
     for (const element of Array.from(entries.keys())) removeGrips(element)
   }
 
+  const gestureValid = (active) => !!(active && enabled()
+    && active.sessionId === guard(() => getSessionId(), null)
+    && active.panel === currentPanel()
+    && active.element.isConnected
+    && active.panel.contains(active.element)
+    && active.element.getAttribute(COMPANION.attrs.peek) !== '1')
+
   /** 同步把手集合：仅当前会话 panel 内的官方浮窗；未启用/无 panel 时全部移除。 */
   const sync = () => {
     if (disposed) return
+    if (gesture && !gestureValid(gesture)) cancelGesture('context-changed')
     if (!enabled()) {
       stopObserver()
       clearAll()
@@ -483,6 +497,11 @@ export function installFloatResize(deps = {}) {
   }
 
   const finishGesture = () => {
+    // 会话切换/收起/关闭可能先于下一次 sync；松手也必须重新验证归属。
+    if (gesture && !gestureValid(gesture)) {
+      cancelGesture('context-changed')
+      return
+    }
     const active = busy()
     if (!active) return
     if (!active.moved) {
@@ -490,7 +509,7 @@ export function installFloatResize(deps = {}) {
       restoreStyle(active)
       return
     }
-    const result = commitFloatRect(active.element, active.rect, { getService, getSessionId })
+    const result = commitFloatRect(active.element, active.rect, { getService, getSessionId: () => active.sessionId })
     lastCommit = { at: Date.now(), rect: active.rect, ok: !!result.ok, via: result.via || null, reason: result.reason || null }
     if (!result.ok) {
       log('float.resize.commit.fail', { reason: result.reason || null })
@@ -511,6 +530,10 @@ export function installFloatResize(deps = {}) {
   const onGestureMove = (event) => {
     const active = gesture
     if (!active || event.pointerId !== active.pointerId) return
+    if (!gestureValid(active)) {
+      cancelGesture('context-changed')
+      return
+    }
     const dx = event.clientX - active.startX
     const dy = event.clientY - active.startY
     const rect = computeResizeRect(active.startRect, active.direction, dx, dy, active.startBounds, MIN_SIZE)
@@ -526,7 +549,10 @@ export function installFloatResize(deps = {}) {
     finishGesture()
   }
 
-  const onGestureCancel = () => cancelGesture('pointercancel')
+  const onGestureCancel = (event) => {
+    if (gesture && event.pointerId !== undefined && event.pointerId !== gesture.pointerId) return
+    cancelGesture('pointercancel')
+  }
 
   const onGestureKeyDown = (event) => {
     if (event && event.key === 'Escape') {
@@ -545,6 +571,8 @@ export function installFloatResize(deps = {}) {
     if (DIRECTIONS.indexOf(direction) < 0) return
     if (element.getAttribute(COMPANION.attrs.peek) === '1') return
     if (element.hasAttribute(RESIZING_ATTR)) return
+    const panel = currentPanel()
+    if (!panel || !panel.contains(element)) return
     const rect = readRect(element)
     if (!rect) return
     cancelGesture('superseded')
@@ -561,6 +589,8 @@ export function installFloatResize(deps = {}) {
     }
     gesture = {
       element,
+      panel,
+      sessionId: guard(() => getSessionId(), null),
       grip,
       direction,
       pointerId: event.pointerId,

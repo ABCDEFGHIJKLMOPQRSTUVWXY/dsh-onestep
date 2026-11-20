@@ -25,23 +25,46 @@ const SUITES = [
 ]
 
 const argv = process.argv.slice(2)
-const onlyArg = argv.find((item) => item.startsWith('--only='))
-const onlyList = onlyArg ? onlyArg.slice('--only='.length).split(',').map((item) => item.trim()).filter(Boolean) : null
-const listOnly = argv.includes('--list')
+let onlyList = null
+let listOnly = false
+for (let index = 0; index < argv.length; index += 1) {
+  const arg = argv[index]
+  if (arg === '--list') {
+    listOnly = true
+    continue
+  }
+  if (arg === '--only' || arg.startsWith('--only=')) {
+    const value = arg === '--only' ? argv[++index] : arg.slice('--only='.length)
+    if (onlyList !== null || !value || value.startsWith('--')) {
+      console.error('--only 必须指定一次非空的 suite 列表，例如 --only m1,m2')
+      process.exit(2)
+    }
+    onlyList = value.split(',').map((item) => item.trim()).filter(Boolean)
+    if (onlyList.length === 0) {
+      console.error('--only 必须指定非空的 suite 列表')
+      process.exit(2)
+    }
+    continue
+  }
+  console.error('未知参数：' + arg)
+  process.exit(2)
+}
+if (onlyList) {
+  const unknown = onlyList.filter((name) => !SUITES.some((item) => item.id === name || item.suite === name))
+  if (unknown.length > 0) {
+    console.error('未知 suite：' + unknown.join(','))
+    process.exit(2)
+  }
+}
 const selected = onlyList
   ? SUITES.filter((item) => onlyList.includes(item.id) || onlyList.includes(item.suite))
   : SUITES
-
-ensureDirs()
 
 if (listOnly) {
   for (const item of selected) console.log(item.id + '  ' + item.suite + '  ' + item.title)
   process.exit(0)
 }
-if (selected.length === 0) {
-  console.error('没有匹配的 suite：' + onlyList.join(','))
-  process.exit(2)
-}
+ensureDirs()
 
 const startedAt = new Date().toISOString()
 const report = {

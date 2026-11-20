@@ -19,6 +19,9 @@
       "en"
     ],
     "keysPerLocale": 75,
+    "usedKeys": 73,
+    "unusedKeys": 0,
+    "missing": 0,
     "hardcoded": 0
   },
   "releaseHygiene": {
@@ -29,7 +32,7 @@
   "docsLinks": {
     "pass": true,
     "checks": 16,
-    "scannedMarkdown": 10,
+    "scannedMarkdown": 11,
     "screenshots": 6
   },
   "syntax": {
@@ -39,7 +42,8 @@
   "build": {
     "pass": true,
     "command": "node scripts/build.mjs",
-    "reproducible": true
+    "reproducible": true,
+    "bytes": 347283
   },
-  "generatedAt": "2026-11-19T10:02:20.942Z"
+  "generatedAt": "2026-11-20T07:37:02.957Z"
 }

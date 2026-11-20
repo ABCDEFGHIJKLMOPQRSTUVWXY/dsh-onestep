@@ -211,12 +211,12 @@ function clearPeekTimer(element) {
     clearTimeout(timer)
     peekTimers.delete(element)
   }
+  if (element.hasAttribute(PEEK_RESTORING_ATTR)) element.removeAttribute(PEEK_RESTORING_ATTR)
 }
 
 /** 清理全部收起/恢复过渡定时器（createPeekLayer dispose 与测试用）。 */
 export function disposePeekMotionTimers() {
-  for (const timer of peekTimers.values()) clearTimeout(timer)
-  peekTimers.clear()
+  for (const element of Array.from(peekTimers.keys())) clearPeekTimer(element)
 }
 
 /**

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { layoutUsable, preferredRailSide, solve } from '../src/client/layout.js'
+import { LIMITS } from '../src/client/adapter.js'
 
 const base = { railSide: 'left', railSize: 232, railCollapsed: false, count: 2 }
 
@@ -101,9 +102,27 @@ test('rail 收窄优先于单窗；宽屏 left、中宽 top', () => {
   assert.equal(solve({ ...base, width: 800, height: 800 }).degraded, 'none')
 })
 
-test('railSize 夹到范围', () => {
-  const layout = solve({ ...base, railSize: 9999, width: 1280, height: 800 })
-  assert.equal(layout.rail.w, 320)
+test('railSize 只夹下限；超宽值按焦点窗最小尺寸收窄（0.7.0 解除最大宽度限制）', () => {
+  const maxFit = 1280 - LIMITS.railInset - LIMITS.gap - LIMITS.focusMinWidth
+  const huge = solve({ ...base, railSize: 9999, width: 1280, height: 800 })
+  assert.equal(huge.rail.w, maxFit)
+  assert.equal(huge.focus.w, LIMITS.focusMinWidth)
+  assert.equal(huge.degraded, 'rail-collapsed')
+
+  // 旧上限 320 已解除：用户拖到 600 时布局原样采用
+  const wide = solve({ ...base, railSize: 600, width: 1440, height: 900 })
+  assert.equal(wide.rail.w, 600)
+  assert.ok(wide.focus.w > LIMITS.focusMinWidth)
+
+  // 下限仍然生效
+  const low = solve({ ...base, railSize: 1, width: 1280, height: 800 })
+  assert.equal(low.rail.w, LIMITS.railLeft.min)
+
+  // 顶部候场栏同样解除最大高度；超高时同样给焦点窗保底
+  const topHuge = solve({ ...base, railSide: 'top', railSize: 9999, width: 1280, height: 800 })
+  const topMaxFit = 800 - LIMITS.gap - LIMITS.focusMinHeight
+  assert.equal(topHuge.rail.h, topMaxFit)
+  assert.equal(topHuge.focus.h, LIMITS.focusMinHeight)
 })
 
 test('伴生窗挤压：stageW 下探 + 强制收栏 → 单窗保活', () => {

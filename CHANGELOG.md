@@ -6,28 +6,65 @@
 
 ## 版本策略
 
-- **当前版本：`0.7.0`**——P2 收口 + P3 独立伴生浮窗 + P4 动效优化 + 候场上限解除与滚动（3→12）+ 点击换焦慢速占位动效 + 浮窗 8 向边缘缩放与收起标签整堆拖动，**未公开发布**（npm/GitHub/市场均未发布，发布前须按 `发布检查表` 复查 registry 占用与脱敏）。
-- **建议首个公开发布版本：`0.7.0`**——P2 的 `0.2.0`、P3 的 `0.3.0` 均从未单独发布，本文保留其段落并把 P2+P3+P4（含 0.4.1/0.4.2 修复）、0.5.0/0.6.x 与 0.7.0 新能力并入 `0.7.0`；若用户决定分批发（如先 `0.3.0` 再 `0.4.x`），按发布检查表拆分成多条 Release 记录即可。按 semver 0.x，新特性由 minor 承载、修复走 patch。
-- 本文件只给建议，实际改版以发布收口时 `package.json` 为准（当前已收口到 `0.7.0`，负责人与步骤见 `发布检查表` 与 `维护机制`）。
+- **当前版本：`1.0.0`**——`0.7.0` 的全部能力（P2 收口 + P3 独立伴生浮窗 + P4 动效优化 + 候场上限解除与滚动（3→12）+ 点击换焦慢速占位动效 + 浮窗 8 向边缘缩放 + 收起标签整堆拖动 + 候场静态快照 + 已打开浮窗点击高亮）加上 2026-11-20 审查修复与工程门禁，是本项目的**首个公开发布版本**。
+- **`0.7.0` 从未单独发布**：其段落保留为未发布历史基线，供对照构建与审查记录；P2/P3/P4（含 0.4.1/0.4.2 修复）与 0.5.0/0.6.x 的能力也都在历史段落中可查。`1.0.0` 起按 major/minor/patch 递增；0.x 时期新特性由 minor 承载。
+- 本文件只给建议，实际版本以 `package.json` 为准（当前 `1.0.0`）。版本号变更后必须重建 `client.js`（产物内嵌版本常量）并重跑发布检查表 G1–G11。
 - 公开发布后跟随后续 DSH rc：每次 rc 适配按 patch/minor 发布，破坏性变更走 minor；支持范围为「最新 rc + 上一个 rc」（见 README §8）。
+
+## [Unreleased]
+
+## [1.0.0] - 2026-11-20
+
+> 状态：**首个公开发布版本，已在仓库内收口**——版本号、构建产物、文档与门禁在同一提交内完成；`npm publish`、GitHub Release 与远端推送属外向动作，需用户授权后另行执行。
+> 内容：`0.7.0` 的全部能力（见下方 `[0.7.0]` 段落）+ 2026-11-20 审查修复与工程改进。
+> 构建：`client.js` **347283 B / sha256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`**（`node scripts/build.mjs` 逐字节复现，连续两次同哈希）；单测 **190/190**（18 个文件，自动发现）；i18n zh/en 各 **75** 键；发布自查 **33/33**、脱敏命中 0。
+
+### Fixed
+
+- 浮窗缩放中切换会话时，旧手势会读到新的会话 ID：手势固定所属会话与 panel，切会话、关闭舞台、收起或移除浮窗都取消旧手势，不再把旧窗口矩形提交给新会话。
+- 官方重渲染移除插件缩放把手后缓存仍认为已初始化、无法再缩放：现在检查八向把手是否仍在，必要时清理旧监听并重建；同时观察浮窗删除，避免保留过期元素。
+- 快速重复恢复、重新收起或卸载浮窗时取消了计时器却遗留恢复动画属性：取消计时器时同步移除恢复标记。
+- 快照抓取间隔内新增任务、或前一个任务抛错，会绕过抓取间隔：改为间隔结束后再调度，失败任务走同一释放路径，卸载时取消默认回退计时器并保留显式零延迟。
+- 已销毁的舞台 store 仍能接收延迟更新并重新安排持久化，覆盖后续实例的设置：销毁后阻止更新、订阅与写盘。
+- `build:check` 只在内存编译，磁盘产物缺失或过期也会通过，且把字符数当字节数：改为逐字节比较磁盘产物，缺失或不一致即失败且不写盘，固定构建工作目录并使用 UTF-8 字节数。
+- P4 验证器不解析 `p4:verify --only m1,m2` 的空格形式，混合有效/无效 suite 会静默忽略错误：同时支持空格与等号格式，拒绝空值、重复选项、未知 suite 与未知参数。
+
+### Security
+
+- 快速新建把输入前 80 字符写入诊断日志，而日志可随探针快照导出：现在只记录字符数与工作区 ID，正文仅交给官方草稿接口；同时等待宿主返回值，兼容异步失败透传。
+
+### Changed
+
+- `npm test` 自动发现 `tests/*.test.mjs`，避免新增测试被手写文件列表遗漏；新增 `npm run check` 串联全部单测、构建一致性、i18n、版本范围与文档检查。
+- 新增 Node 22 / 24 的 GitHub Actions CI（工作流尚未在 GitHub 执行）；`.gitattributes` 固定客户端产物为 LF。
+- 安全说明补全只读的官方浮窗存储键；开发文档同步构建检查语义。
+- 独立性复验（2026-11-20）：在本机最终树上重跑 190/190 单测、构建逐字节一致、i18n、版本范围、文档检查与发布自查，全部通过；实机端到端与安装演练未复跑。详见[审查记录](docs/review/2026-11-20-review.md)与[发布检查表](docs/release/checklist.md)。
+
+### Known limitations
+
+- 与 `0.7.0` 相同（见其段落）；此外本轮未复跑隔离 DSH 实例上的 P3/P4 端到端套件与 tarball 安装演练（发布检查表 G8/G9），公开发布前必须补齐。
 
 ## [0.7.0] - 2026-11-19
 
 > 状态：**未发布**（发布前已完成全量代码审查、版本兼容复核与打包演练，修复项见下 `Fixed`；用户反馈两项交互：收起标签只能拖顶部小把手、浮窗只能从右下角调整大小）。
-> 构建：`client.js` sha256 `CC3D0F1C11A7C790B993677F61DB8117DB741DA345B577D751AC566D6FF76993`（324696 bytes，可由 `node scripts/build.mjs` 逐字节复现）；上一版 `71D10077…419F`（323227 bytes）的 float-edge e2e 证据保留在 `artifacts/p3/verify/float-edge-e2e.json`。
+> 构建：`client.js` sha256 `DD5527B883B543566836ED75A92979CFBDB9D3D526C75C31988EA9E58CFBEB7A`（341535 bytes，可由 `node scripts/build.mjs` 逐字节复现）；此前构建 `CC3D0F1C…F76993`（324696 bytes）的审查/打包证据保留在 `docs/release-evidence/`（0.7.0 发布前追加修复后需按发布检查表重生成）。
 
 ### Added
 
 - **浮窗 8 向边缘缩放**（`src/client/float-resize.js`）：舞台浮动形态下给每个官方浮窗注入 8 个透明把手（左右上下边 + 四角，边带 6px / 角 12px）；手势在 float 元素 capture 阶段抢占，实时写内联几何预览，松手经官方 FloatLayer fiber `intents.resizeFloat` 提交一次官方 `resizeFloat`（含 x/y/width/height，可撤销、持久化、重渲染）；取不到 intents 时回退 controller 私有 `actionsFor`/store actions，仍失败则还原预览并日志。几何镜像官方口径：最小 220×140、西/北侧对边固定、东/南侧受视口限制、北侧不低于标题栏下沿；Esc 取消；点一下边缘（无位移）不提交。
+- **已打开浮窗再次点击：高亮闪烁两下 + 抬升最上层**（`src/client/float-flash.js`、`service-wrap.js`、`index.js`、`styles.js`）：点击命中的伴生浮窗已展开时不再执行展开/恢复动作；包装层已管理分支先由 policy `onFocusManaged(record)` 触发高亮（`[data-onestep-float-flash]` + 240ms ×2 的 inset 光环动画），随后官方 `focus` 把该浮窗抬到 z 序最上层（官方 `focusTab` 对浮窗即 raise）；只刷新 LRU 聚焦时间，不改槽位/形态；减少动效设置下为一次静态高亮。收起态仍走单窗展开分支（两分支互斥）。
 - **收起标签整堆拖动 + 松手吸附**（`src/client/peek-tags.js`、`peek-layer.js`）：在任意标签上按下并上下移动 ≥4px 即拖动整堆（不再只依赖顶部手柄；移动后抑制本次 click，点击仍按原语义恢复浮窗）；拖动只改纵向、标签层始终贴右缘；松手在 10px 阈值内吸附到上/下沿或默认安全位置（`snapPeekTop`），位置照旧持久化 `ui.peekTop`。
 
 ### Changed
 
+- **候场卡缩略改为静态快照（用户要求）**：live 档不再给每张候场卡挂 live 官方内容，而是在隐藏宿主渲染一次官方聊天画面后克隆为静态快照；卡片之后只显示该快照，只有状态签名（blank / awaitingFirstTurn / 标题 / running / 完成未读 / 待处理类型）变化时才重拍。抓取串行 + 空闲调度（一次一张、间隔 140ms），抓取期间显示精简卡；滚动/拖宽/悬停/换焦期间不再挂载官方内容。菜单文案改为「静态快照候场」；内部档位值沿用 `live` 以兼容历史持久化。快照展示按 **contain** 缩放到卡片内容区：整张快照完整可见（比例不一致时居中留白），随卡片尺寸缩放、不裁切。
+- **候场栏取消最大尺寸限制（用户要求）**：候场栏与焦点窗之间的分隔条现在可自由拖动——左侧栏只保留下限 200px、顶部栏下限 108px，不再有 320/220px 的上限；拖动或键盘 `End` 可一直放大到「焦点窗仍保持最小尺寸（480×320）」的最大可用值，窄舞台/刷新后由布局求解自动收窄，尺寸持久化不设上限。
 - 收起标签拖动手柄文案更新为「调整收起标签位置（拖动标签或方向键）」（zh/en 同步）。
-- P3 非公开扩展由「两层」扩为「三层」：新增浮窗矩形提交路径（fiber intents / 私有 store actions）。设计、回退矩阵与 rc diff 项见 `docs/p3-plan.md §4.4/§5.10`；README 与开发文档同步。
+- P3 非公开扩展由「两层」扩为「三层」：新增浮窗矩形提交路径（fiber intents / 私有 store actions）。设计、回退矩阵与 rc diff 项见 `docs/architecture.md` §6.2/§6.4；README 与使用手册同步。
 
 ### Fixed
 
+- **收起后再次点击链接不展开浮窗（0.7.0 追加修复，用户反馈）**：伴生窗全部收起（右缘标签）后，在焦点窗里再次点击同一文件/文档链接，官方会「揭示」既有 tab，但插件此前只补一次 focus，`data-onestep-peek` 的移出视口注入仍在，用户看不到任何变化。现在包装层在「已管理浮窗」分支先询问 policy 的新 hook `onRevealManaged(record)`：若该 tab 在插件状态里处于收起态，则走与点击标签相同的单窗恢复（清除 peek/inert/transform、更新状态、聚焦内容），返回 true 后不再重复 focus；未收起或 hook 异常时保持原来的 focus 抬升。只恢复命中这一窗，其余收起标签不动；显式 placement（`destination`/`paneId` 等）的调用按设计仍直通官方。
 - **发布前审查修复（0.7.0 收口）**：
   - `styles.js` 13 条 CSS 规则被整行双引号包成字符串 token，浏览器视为无效 selector 前奏并连带吞掉随后的 `.onestep-rail-mini`——换焦占位内容、候场翻页按钮、收起态状态条共 14 条规则实际不生效。已去引号，并新增 `tests/styles.test.mjs`（4 条结构断言）防回归。
   - 收起态 `MutationObserver` 被自身同值 `setAttribute('data-onestep-peek','1')` 反复触发，形成约 54fps 的 rAF 重放循环（每帧多次查询与强制同步布局）。已加幂等注入与自触发过滤。
@@ -41,13 +78,23 @@
 
 - 浮窗矩形提交依赖官方 FloatLayer fiber `intents.resizeFloat`（rc 漂移时回退 controller 私有 store actions；再失败只还原预览并记日志，不改变官方状态）——rc 升级需按契约清单做 diff。
 - 缩放无键盘等价路径（与官方右下角缩放一致）；标签拖动只改纵向位置（始终贴右缘，不横向自由停靠）；吸附阈值 10px。
-- 桌面 App 需重启/刷新载入新 `client.js` 后生效（构建版本 `0.7.0`；桌面实机复核见 README §9 与 docs/p3/desktop-verify.md）。
+- 候场快照是**静态 DOM 克隆而非位图**：视觉等同截图、无 live 订阅；首次预览与每次状态变化仍需要挂载一次官方内容（约 0.15–0.4s/卡，串行，抓取完成前显示精简卡）。流式输出不会实时更新画面，等状态签名变化后重拍。
+- 候场栏取消固定上限，但最大可用尺寸仍受焦点窗最小尺寸约束（左栏需给焦点窗留 480px、顶部栏留 320px）；舞台过窄时会按可用空间自动收窄候场栏（布局标记 `rail-collapsed`），不会挤压焦点窗到不可用。
+- 「再次点击链接展开收起浮窗」只覆盖默认放置的打开（聊天里的文件/文档链接、工具卡、计划等）；调用方显式指定 `destination`/`paneId`/`preferNewPane`/`replaceTab` 时包装层按设计直通官方，不触发插件展开。
+- 「已打开浮窗再次点击」的高亮闪烁是 CSS 动画（减少动效下退化为一次静态高亮），只提示可见性与层级；不改变浮窗内容/尺寸/布局，层级抬升由官方 `focus` 完成。
+- 桌面 App 需重启/刷新载入新 `client.js` 后生效（构建版本 `0.7.0`；桌面实机复核见 README §9 与 docs/user-guide.md 排障段）。
 
 ### Evidence
 
-- 单测 **151/151**（逐文件 `node <test>`：0.7.0 新增 `tests/float-resize.test.mjs` 8 条、`tests/peek-layer.test.mjs` 的 `peekTopRange`/`snapPeekTop` 2 条；发布前审查再增 `tests/styles.test.mjs` 4 条 CSS 结构回归；其余套件全绿）。
-- 隔离实例 e2e **21/21**（`onestep-p0` @4650，真实 CDP 鼠标输入，0 pageerror）：3 浮窗各 8 把手 → 收起 3 标签 → 拖标签 +120px / 位置持久化 / 右缘固定 / 不误触 click → 松手吸附 → 点击恢复单窗 → 西/北/右下角缩放与期望一致（其它窗不动）→ 官方 localStorage 矩形一致 → 刷新后尺寸恢复 → split 形态不注入把手。证据 `artifacts/p3/verify/float-edge-e2e.json`；截图 `cdp-01-floats.png` … `cdp-06-after-reload.png`（仓库根，本次验证临时产物、未入包，可按需归档）。
-- 构建：`scripts/build.mjs` 同构复现（esbuild 0.25.0 / cjs / chrome120 / 11 项 external），0.6.1 基线曾以同一 CLI 路径逐字节复现（sha256 C14279E1…D3360B6）；0.7.0 产物 sha 与仓库 `client.js` 一致。
+- 单测 **172/172**（逐文件 `node <test>`：0.7.0 新增 `tests/float-resize.test.mjs` 8 条、`tests/peek-layer.test.mjs` 的 `peekTopRange`/`snapPeekTop` 2 条；发布前审查再增 `tests/styles.test.mjs` 4 条 CSS 结构回归；追加修复新增 `tests/service-wrap.test.mjs` 3 条 reveal-hook 用例；打开态高亮新增 `tests/float-flash.test.mjs` 5 条、wrapper 3 条、CSS 结构 1 条；候场栏自由尺寸新增 store 持久化用例 1 条并改写 layout 上限/保底断言；候场静态快照新增 `tests/preview-cache.test.mjs` 8 条（状态签名/快照缓存/串行调度器/contain 适配）；其余套件全绿）。
+- 隔离实例 e2e **75/75**（`onestep-p0` @4650，真实 CDP 鼠标输入，0 pageerror）：
+  - 收起后点链接展开：2 浮窗 → 全部收起（2 标签）→ 打开 README 链接 → README 展开为可见浮窗（非 inert / transform none / 回到槽位 / 记录 peeked=false / 标签 2→1，CHANGELOG 仍收起）→ 打开 CHANGELOG 链接 → 两窗均可见、标签 0 → 已可见时再次打开不改变收起集合（10/10）。证据 `artifacts/p3/verify/float-reveal-e2e.json`。
+  - 已打开浮窗再次点击：点击后 120ms 内目标浮窗 `data-onestep-float-flash` 置位、`::after` 动画名 `onestep-float-flash` 且迭代 2 次；官方持久化 `layout.floats` 末位变为该窗（抬到最上层）；可见数/官方记录不变（不展开）；640ms 后标记移除、动画归 none；点击另一个浮窗同样闪烁并升顶；已可见时重复点击重新起播；全部收起后点击仍是展开且不闪烁（18/18）。证据 `artifacts/p3/verify/float-flash-e2e.json`。
+  - 候场栏自由宽度：1440 视口下左栏真实鼠标拖到 638px（越过旧上限 320）且焦点窗 ≥480；设为 9999 时布局收窄到当前最大可用 660px、焦点窗 480；下限 200；键盘 End 到最大可用、Home 回下限；左栏 600px 刷新后保持；1259 视口顶部栏拖到 438px（越过旧上限 220），设为 9999 时收窄到 568px、焦点窗 320（26/26）。证据 `artifacts/p3/verify/rail-free-width-e2e.json`。
+  - 候场卡静态快照：3 卡时 2/2 快照就绪、隐藏抓取源 0、1.5s 无状态变化时快照 HTML 完全一致；候场栏 232→320→232 重排不重拍；悬停 0 长任务。8 卡时 7/7 快照就绪、滚动 0 长任务（基线 live 2 个长任务/627ms，最大帧间隔 354ms）；换焦 5 个长任务/597ms（基线 live 12 个/1694ms），`focus-switch-content` 493→324ms；0 pageerror。证据 `artifacts/p3/verify/preview-snapshot-e2e.json`。
+  - 既有能力回归：3 浮窗各 8 把手 → 收起 3 标签 → 拖标签 +120px / 位置持久化 / 右缘固定 / 不误触 click → 松手吸附 → 点击恢复单窗 → 西/北/右下角缩放与期望一致（其它窗不动）→ 官方 localStorage 矩形一致 → 刷新后尺寸恢复 → split 形态不注入把手（21/21）。证据 `artifacts/p3/verify/float-edge-e2e.json`。
+  - 截图：`cdp-01-floats.png` … `cdp-06-after-reload.png`、`reveal-peeked.png` / `reveal-expanded.png`、`rail-wide-620.png`（仓库根，临时产物、未入包，可按需归档）。
+- 构建：`scripts/build.mjs` 同构复现（esbuild 0.25.0 / cjs / chrome120 / 11 项 external），连续两次构建 sha256 相同；0.7.0 产物 sha 与仓库 `client.js` 一致。
 - 发布前审查（同一构建）：隔离 profile `onestep-rel` 上 tarball 安装 → 启动 → 舞台冒烟 → 退出 → 卸载复核，证据 `artifacts/release-0.7.0/smoke/`；修复后二次验证（含 F1/F2 核心状态机与 CSS 生效回归）见 `artifacts/release-0.7.0/smoke2/` 与 `tmp/review/smoke2.md`。`npm run p3:verify` / `npm run p4:verify` 全套仍未在 0.7.0 构建上复跑（0.6.1 的 101/208 断言基线沿用），重点待补：peek-tags F1–F4、G8 标签样式、p4 m4-peek。
 
 ## [0.6.1] - 2026-11-19

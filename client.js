@@ -106,7 +106,9 @@ var COMPANION = {
     /** 0.7.0：浮窗边缘缩放把手（值 = 方向 n/s/e/w/ne/nw/se/sw）。 */
     resizeGrip: "data-onestep-float-resize",
     /** 0.7.0：浮窗缩放进行中标记（仅插件样式/探针使用，不改官方状态）。 */
-    resizing: "data-onestep-resizing"
+    resizing: "data-onestep-resizing",
+    /** 0.7.0：已打开浮窗被再次点击时的高亮闪烁标记（纯展示，不改官方状态）。 */
+    floatFlash: "data-onestep-float-flash"
   },
   /** 层序（P3-1 实测：浮窗层 60、标签层计划 62–66、官方菜单运行时共享 surface ≈1100）。 */
   layers: { float: 60, tag: 63, menuFallback: 1e3 },
@@ -130,7 +132,10 @@ var COMPANION = {
     /** 0.7.0：桌面标题栏下沿留白（官方 floatBounds：caption + 20）。 */
     floatCaptionFloor: 20,
     /** 0.7.0：收起标签拖动松手吸附阈值（px）。 */
-    peekSnap: 10
+    peekSnap: 10,
+    /** 0.7.0：已打开浮窗被再次点击时的闪烁次数与单次时长（CSS 动画与计时器共用）。 */
+    floatFlashPulses: 2,
+    floatFlashPulseMs: 240
   }
 };
 var INJECT = ["slots", "locale", "shortcuts"];
@@ -140,8 +145,9 @@ var PROBE_FLAG_KEY = "dsh.onestep.probe";
 var LIMITS = {
   maxCandidates: 12,
   /** 0.5.0：候场上限 3→6（用户要求解除 3 个限制）；实时缩略仅建议 ≤3，4+ 由自动精简/用户档位控制。 */
-  railLeft: { default: 232, min: 200, max: 320 },
-  railTop: { default: 132, min: 108, max: 220 },
+  /** 0.7.0：候场栏只保留下限，取消最大尺寸限制（用户可自由拖动）；布局求解仍保证焦点窗最小尺寸，窄容器下自动收窄候场栏。 */
+  railLeft: { default: 232, min: 200 },
+  railTop: { default: 132, min: 108 },
   focusMinWidth: 480,
   focusMinHeight: 320,
   cardMinWidth: 200,
@@ -236,7 +242,7 @@ var DICTIONARIES = {
     "stage.empty": "候场为空",
     "window.close": "关闭窗口",
     "window.more": "更多操作",
-    "window.previewLive": "切换为完整候场",
+    "window.previewLive": "切换为静态快照候场",
     "window.previewCard": "切换为精简候场",
     "window.companion": "打开/收起伴生窗",
     "window.companionToSplit": "伴生窗：左右分屏",
@@ -313,7 +319,7 @@ var DICTIONARIES = {
     "stage.empty": "No candidates",
     "window.close": "Close window",
     "window.more": "More actions",
-    "window.previewLive": "Use full previews",
+    "window.previewLive": "Use static snapshot previews",
     "window.previewCard": "Use compact previews",
     "window.companion": "Toggle companion windows",
     "window.companionToSplit": "Companion: split beside",
@@ -831,7 +837,7 @@ ${motionTokensCss()}
    若窗口底色不是 bg-base，底部会出现一条割裂的渐变带。 */
 .onestep-frame[data-mode="focus"]{background:var(--dsw-alias-bg-base,#15181c)}
 .onestep-frame[data-mode="focus"] .onestep-body{background:var(--dsw-alias-bg-base,#15181c)}
-/* 候场卡实时缩略：官方聊天体按逻辑宽度渲染后整体等比缩放，避免在 232px 逻辑宽度下重排导致布局崩坏 */
+/* 候场卡静态快照：官方内容按逻辑宽度渲染一次后克隆为静态画面，整体等比缩放，避免在 232px 逻辑宽度下重排导致布局崩坏 */
 .onestep-thumb{position:absolute;inset:0;overflow:hidden;background:var(--dsw-alias-bg-base,#15181c)}
 .onestep-thumb-content{position:absolute;left:0;top:0;transform-origin:top left;pointer-events:none}
 /* 候场栏 ↔ 焦点窗 可拖拽分隔条（比例调整） */
@@ -968,6 +974,11 @@ ${motionTokensCss()}
 .onestep-float-resize-grip[data-dir="se"]{bottom:0;right:0;width:12px;height:12px;cursor:nwse-resize}
 [data-dockkit-float][data-onestep-resizing]{user-select:none}
 [data-dockkit-float][data-onestep-resizing] *{cursor:inherit}
+/* 0.7.0：已打开浮窗被再次点击时闪烁两下（纯展示；层级抬升由官方 focus 完成） */
+[data-dockkit-float][data-onestep-float-flash]::after{content:'';position:absolute;inset:0;z-index:7;border-radius:inherit;pointer-events:none;opacity:0;box-shadow:inset 0 0 0 2px var(--dsw-alias-state-business-primary,#4c8dff);animation:onestep-float-flash 240ms ease-out 2}
+@keyframes onestep-float-flash{0%{opacity:0}35%{opacity:1}100%{opacity:0}}
+:root[data-onestep-motion="reduced"] [data-dockkit-float][data-onestep-float-flash]::after{animation:none;opacity:1}
+@media (prefers-reduced-motion:reduce){[data-dockkit-float][data-onestep-float-flash]::after{animation:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.onestep-peek-tag,.onestep-peek-label,.onestep-peek-grip{transition:none}}
 /* P4-2：reduced 双路径（属性 = 插件设置；media = 系统）+ View Transitions 伪元素规则 */
 :root[data-onestep-motion="reduced"]{${motionReducedCss()}}
@@ -995,7 +1006,8 @@ function normalizeState(raw) {
   if (raw.version !== STATE_VERSION) return base;
   const railSide = raw.railSide === "top" ? "top" : "left";
   const bounds = railSide === "left" ? LIMITS.railLeft : LIMITS.railTop;
-  const railSize = Math.min(bounds.max, Math.max(bounds.min, Number(raw.railSize) || bounds.default));
+  const persistedRail = Number(raw.railSize);
+  const railSize = Number.isFinite(persistedRail) && persistedRail > 0 ? Math.max(bounds.min, Math.round(persistedRail)) : bounds.default;
   const candidates = [];
   const seen = /* @__PURE__ */ new Set();
   if (Array.isArray(raw.candidates)) {
@@ -1084,7 +1096,8 @@ function setRailSide(state, side) {
 }
 function setRailSize(state, px) {
   const bounds = state.railSide === "top" ? LIMITS.railTop : LIMITS.railLeft;
-  const railSize = Math.min(bounds.max, Math.max(bounds.min, Math.round(Number(px) || bounds.default)));
+  const requested = Number(px);
+  const railSize = Number.isFinite(requested) && requested > 0 ? Math.max(bounds.min, Math.round(requested)) : bounds.default;
   if (railSize === state.railSize) return state;
   return { ...state, railSize };
 }
@@ -1218,18 +1231,20 @@ function createStageStore(options = {}) {
   let state = normalizeState(options.initial || loadPersisted(options.storage) || defaultStageState());
   const listeners = /* @__PURE__ */ new Set();
   let persistTimer = null;
+  let disposed = false;
   const persistDelayMs = options.persistDelayMs === void 0 ? 300 : options.persistDelayMs;
   const flushPersist = () => {
     persistTimer = null;
+    if (disposed) return;
     savePersisted(options.storage, state.persistStage ? state : { ...state, candidates: [] });
   };
   const schedulePersist = () => {
-    if (!options.storage) return;
+    if (disposed || !options.storage) return;
     if (persistTimer !== null) return;
     persistTimer = setTimeout(flushPersist, persistDelayMs);
   };
   const commit = (next) => {
-    if (!next || next === state) return false;
+    if (disposed || !next || next === state) return false;
     state = next;
     for (const listener of Array.from(listeners)) {
       try {
@@ -1243,11 +1258,13 @@ function createStageStore(options = {}) {
   return {
     getSnapshot: () => state,
     subscribe: (listener) => {
+      if (disposed) return () => {
+      };
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
     /** 用纯函数更新：传入当前状态，返回新状态（null/相同引用不提交）。 */
-    update: (fn) => commit(fn(state)),
+    update: (fn) => !disposed && commit(fn(state)),
     addCandidate: (sessionId, now) => {
       const result = addCandidate(state, sessionId, now);
       commit(result.state);
@@ -1275,6 +1292,7 @@ function createStageStore(options = {}) {
       flushPersist();
     },
     dispose: () => {
+      disposed = true;
       if (persistTimer !== null) clearTimeout(persistTimer);
       persistTimer = null;
       listeners.clear();
@@ -2451,10 +2469,10 @@ function clearPeekTimer(element) {
     clearTimeout(timer);
     peekTimers.delete(element);
   }
+  if (element.hasAttribute(PEEK_RESTORING_ATTR)) element.removeAttribute(PEEK_RESTORING_ATTR);
 }
 function disposePeekMotionTimers() {
-  for (const timer of peekTimers.values()) clearTimeout(timer);
-  peekTimers.clear();
+  for (const element of Array.from(peekTimers.keys())) clearPeekTimer(element);
 }
 function applyPeekToElement(element, peeked, offset = COMPANION.defaults.peekOffset) {
   if (!element || !element.style) return;
@@ -2950,7 +2968,8 @@ function solve(input) {
   const cardMinH = input.min && input.min.cardH || LIMITS.cardMinHeight;
   const stageMinW = input.min && input.min.stageW || LIMITS.stageMinWidth;
   const railBounds = railSide === "left" ? LIMITS.railLeft : LIMITS.railTop;
-  const railSize = clamp2(Number(input.railSize) || railBounds.default, railBounds.min, railBounds.max);
+  const requestedRail = Number(input.railSize);
+  const railSize = Math.max(railBounds.min, Number.isFinite(requestedRail) && requestedRail > 0 ? requestedRail : railBounds.default);
   const empty = () => ({ focus: { x: 0, y: 0, w: width, h: height }, cards: [], rail: null, scroll: false, degraded: "none", railSize, visibleCount: 0, contentW: width, contentH: height });
   if (width < stageMinW || height < focusMinH) return empty();
   const collapsed = !!input.railCollapsed || count === 0;
@@ -3137,6 +3156,166 @@ function formatRelative(epochMs, now = Date.now()) {
   }
 }
 
+// src/client/preview-cache.js
+function fitSnapshot(boxWidth, boxHeight, snapshotWidth, snapshotHeight) {
+  const bw = Math.max(1, Number(boxWidth) || 1);
+  const bh = Math.max(1, Number(boxHeight) || 1);
+  const sw = Math.max(1, Number(snapshotWidth) || 1);
+  const sh = Math.max(1, Number(snapshotHeight) || 1);
+  const scale = Math.max(0.01, Math.min(bw / sw, bh / sh));
+  const width = sw * scale;
+  const height = sh * scale;
+  return {
+    scale,
+    left: Math.max(0, (bw - width) / 2),
+    top: Math.max(0, (bh - height) / 2),
+    width,
+    height
+  };
+}
+var PREVIEW_SNAPSHOT_VERSION = 1;
+function previewStatusKey(row, status) {
+  const pending = status && status.pendingInteraction ? status.pendingInteraction : null;
+  return [
+    "v" + PREVIEW_SNAPSHOT_VERSION,
+    row && row.blank ? "blank" : "filled",
+    row && row.awaitingFirstTurn ? "awaiting" : "started",
+    String(row && row.displayTitle || ""),
+    status && status.running ? "running" : "idle",
+    status && status.completionUnread ? "unread" : "read",
+    pending ? String(pending.kind || "pending") : ""
+  ].join("|");
+}
+function createPreviewCache(options = {}) {
+  const max = Math.max(1, Math.floor(Number(options.max) || 24));
+  const now = typeof options.now === "function" ? options.now : () => Date.now();
+  const entries = /* @__PURE__ */ new Map();
+  const prune = () => {
+    while (entries.size > max) {
+      const oldest = entries.keys().next();
+      if (oldest.done) break;
+      entries.delete(oldest.value);
+    }
+  };
+  const latest = (sessionId) => {
+    const id = String(sessionId || "");
+    return entries.get(id) || null;
+  };
+  const get = (sessionId, key) => {
+    const entry = latest(sessionId);
+    if (!entry || entry.key !== key) return null;
+    entries.delete(String(sessionId));
+    entries.set(String(sessionId), entry);
+    return entry;
+  };
+  const set = (sessionId, key, html, width, height) => {
+    const id = String(sessionId || "");
+    if (!id || typeof html !== "string" || !html) return null;
+    const entry = {
+      key: String(key || ""),
+      html,
+      width: Math.max(1, Math.round(Number(width) || 1)),
+      height: Math.max(1, Math.round(Number(height) || 1)),
+      at: now()
+    };
+    entries.delete(id);
+    entries.set(id, entry);
+    prune();
+    return entry;
+  };
+  const retain = (ids) => {
+    const keep = new Set(Array.from(ids || []).map((id) => String(id)));
+    for (const id of Array.from(entries.keys())) {
+      if (!keep.has(id)) entries.delete(id);
+    }
+  };
+  return {
+    latest,
+    get,
+    set,
+    retain,
+    clear: () => entries.clear(),
+    size: () => entries.size
+  };
+}
+var RECAPTURE_DEBOUNCE_MS = 500;
+var RECAPTURE_MIN_INTERVAL_MS = 2500;
+function recaptureDelayMs(latestAt, now = Date.now()) {
+  const at = Number(latestAt) || 0;
+  const age = Math.max(0, (Number(now) || 0) - at);
+  const throttle = age < RECAPTURE_MIN_INTERVAL_MS ? RECAPTURE_MIN_INTERVAL_MS - age : 0;
+  return Math.max(RECAPTURE_DEBOUNCE_MS, throttle);
+}
+function createCaptureScheduler(options = {}) {
+  const delay = (value, fallback) => Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : fallback;
+  const gapMs = delay(options.gapMs, 120);
+  const fallbackDelayMs = delay(options.fallbackDelayMs, 80);
+  const setTimer = typeof options.setTimeout === "function" ? options.setTimeout : (fn, ms) => setTimeout(fn, ms);
+  const clearTimer = typeof options.clearTimeout === "function" ? options.clearTimeout : (timer) => clearTimeout(timer);
+  const usesIdleCallback = typeof options.requestIdleCallback === "function";
+  const idle = usesIdleCallback ? options.requestIdleCallback : (callback) => setTimer(() => callback({ didTimeout: true, timeRemaining: () => 0 }), fallbackDelayMs);
+  const cancelIdle = usesIdleCallback ? typeof options.cancelIdleCallback === "function" ? options.cancelIdleCallback : () => {
+  } : clearTimer;
+  const queue = [];
+  let current = null;
+  let idleHandle = null;
+  let gapTimer = null;
+  let disposed = false;
+  const schedule = () => {
+    if (disposed || current !== null || idleHandle !== null || gapTimer !== null || queue.length === 0) return;
+    idleHandle = idle(() => {
+      idleHandle = null;
+      if (disposed || current !== null) return;
+      const job = queue.shift();
+      if (!job) return;
+      current = job;
+      try {
+        job.run();
+      } catch (_error) {
+        done(job);
+      }
+    });
+  };
+  const done = (job) => {
+    if (disposed) return false;
+    if (current === null) return false;
+    if (job !== void 0 && job !== null && current !== job) return false;
+    current = null;
+    if (gapTimer !== null) clearTimer(gapTimer);
+    gapTimer = setTimer(() => {
+      gapTimer = null;
+      schedule();
+    }, gapMs);
+    return true;
+  };
+  const push = (job) => {
+    if (disposed || !job || typeof job.run !== "function") return;
+    queue.push(job);
+    schedule();
+  };
+  const remove = (job) => {
+    const index = queue.indexOf(job);
+    if (index >= 0) queue.splice(index, 1);
+  };
+  const dispose = () => {
+    disposed = true;
+    if (idleHandle !== null) {
+      try {
+        cancelIdle(idleHandle);
+      } catch (_error) {
+      }
+      idleHandle = null;
+    }
+    if (gapTimer !== null) {
+      clearTimer(gapTimer);
+      gapTimer = null;
+    }
+    queue.length = 0;
+    current = null;
+  };
+  return { push, remove, done, pending: () => queue.length + (current === null ? 0 : 1), dispose };
+}
+
 // src/client/stage-root.js
 var useStoreSnapshot = (observable) => import_react.default.useSyncExternalStore(observable.subscribe, observable.getSnapshot, observable.getSnapshot);
 var EMPTY_SIGNAL = { getSnapshot: () => null, subscribe: () => () => {
@@ -3153,6 +3332,179 @@ var WindowSlotContent = import_react.default.memo(function WindowSlotContent2(pr
     )
   );
 });
+var SNAPSHOT_SETTLE_FRAMES = 2;
+var SNAPSHOT_SETTLE_MS = 220;
+var SNAPSHOT_TIMEOUT_MS = 2600;
+var MAX_INHERIT_SNAPSHOT_CHARS = 24e5;
+var rafOnce = (callback) => typeof window !== "undefined" && window.requestAnimationFrame ? window.requestAnimationFrame(callback) : setTimeout(callback, 16);
+function CandidatePreview(props) {
+  const { sessionId, reference, statusKey, width, height, boxWidth, boxHeight, SessionProvider, renderSlot, onWindowError, t, cache, scheduler, deferred, onCaptured, placeholder } = props;
+  const [capturing, setCapturing] = import_react.default.useState(false);
+  const sourceRef = import_react.default.useRef(null);
+  const latest = cache.latest(sessionId);
+  const current = !!(latest && latest.key === statusKey);
+  const captureJobRef = import_react.default.useRef(null);
+  const capturingRef = import_react.default.useRef(false);
+  capturingRef.current = capturing;
+  const releaseJob = () => {
+    const job = captureJobRef.current;
+    if (!job) return;
+    captureJobRef.current = null;
+    scheduler.done(job);
+  };
+  import_react.default.useEffect(() => {
+    if (deferred || current) return void 0;
+    if (capturingRef.current || captureJobRef.current) return void 0;
+    const snapshot2 = cache.latest(sessionId);
+    const delayMs = snapshot2 ? recaptureDelayMs(snapshot2.at) : 0;
+    let timer = null;
+    const start = () => {
+      timer = null;
+      if (capturingRef.current || captureJobRef.current) return;
+      const job = {
+        run: () => {
+          job.started = true;
+          setCapturing(true);
+        }
+      };
+      captureJobRef.current = job;
+      scheduler.push(job);
+    };
+    if (delayMs <= 0) start();
+    else timer = setTimeout(start, delayMs);
+    return () => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      const job = captureJobRef.current;
+      if (job && !job.started) {
+        captureJobRef.current = null;
+        scheduler.remove(job);
+      }
+    };
+  }, [deferred, current, statusKey, sessionId, scheduler, cache]);
+  import_react.default.useEffect(() => {
+    if (!capturing) return void 0;
+    const host = sourceRef.current;
+    if (!host) {
+      releaseJob();
+      setCapturing(false);
+      return void 0;
+    }
+    let cancelled = false;
+    const startedAt = Date.now();
+    let settleTimer = null;
+    const finish = () => {
+      if (cancelled) return;
+      cancelled = true;
+      let html = "";
+      try {
+        html = host.innerHTML;
+      } catch (_error) {
+        html = "";
+      }
+      if (html) {
+        cache.set(sessionId, statusKey, html, width, height);
+        if (onCaptured) onCaptured();
+      }
+      releaseJob();
+      setCapturing(false);
+    };
+    const tick = () => {
+      if (cancelled) return;
+      const content = host.querySelector("[data-conversation-content]");
+      const rect = content ? content.getBoundingClientRect() : null;
+      if (rect && rect.width > 2 && rect.height > 2) {
+        let frames = 0;
+        let lastLength = -1;
+        const settle = () => {
+          if (cancelled) return;
+          if (Date.now() - startedAt > SNAPSHOT_TIMEOUT_MS) {
+            finish();
+            return;
+          }
+          if (frames < SNAPSHOT_SETTLE_FRAMES) {
+            frames += 1;
+            rafOnce(settle);
+            return;
+          }
+          let length = 0;
+          try {
+            length = host.innerHTML.length;
+          } catch (_error) {
+            length = 0;
+          }
+          if (length > 0 && length === lastLength) {
+            finish();
+            return;
+          }
+          lastLength = length;
+          settleTimer = setTimeout(settle, SNAPSHOT_SETTLE_MS);
+        };
+        settle();
+        return;
+      }
+      if (Date.now() - startedAt > SNAPSHOT_TIMEOUT_MS) {
+        finish();
+        return;
+      }
+      rafOnce(tick);
+    };
+    rafOnce(tick);
+    return () => {
+      cancelled = true;
+      if (settleTimer !== null) clearTimeout(settleTimer);
+    };
+  }, [capturing, sessionId, statusKey]);
+  import_react.default.useEffect(() => () => {
+    releaseJob();
+  }, []);
+  const snapshot = deferred ? null : cache.latest(sessionId);
+  const snapshotEl = snapshot ? (() => {
+    const fit = fitSnapshot(boxWidth, boxHeight, snapshot.width, snapshot.height);
+    return h(
+      "div",
+      { className: "onestep-thumb", "data-onestep-snapshot": "1", "aria-hidden": "true" },
+      h("div", {
+        className: "onestep-thumb-content",
+        style: {
+          left: fit.left,
+          top: fit.top,
+          width: snapshot.width,
+          height: snapshot.height,
+          transform: "scale(" + fit.scale + ")",
+          transformOrigin: "top left"
+        },
+        dangerouslySetInnerHTML: { __html: snapshot.html }
+      })
+    );
+  })() : null;
+  const sourceEl = capturing ? h(
+    "div",
+    {
+      className: "onestep-thumb",
+      "data-onestep-snapshot-source": "1",
+      "aria-hidden": "true",
+      style: { visibility: "hidden", pointerEvents: "none" }
+    },
+    h(
+      "div",
+      { ref: sourceRef, className: "onestep-thumb-content", style: { width, height } },
+      h(WindowSlotContent, {
+        SessionProvider,
+        renderSlot,
+        sessionId,
+        reference,
+        interactive: false,
+        onWindowError,
+        t
+      })
+    )
+  ) : null;
+  if (!snapshotEl && !sourceEl) return placeholder;
+  return h(import_react.default.Fragment, null, snapshotEl, sourceEl);
+}
 var FLASH_MS = MOTION.flashHold;
 var FOCUS_CLOSE_CORNER = LIMITS.focusCloseCorner;
 var FOCUS_CLOSE_SHOW_MS = 120;
@@ -3194,6 +3546,10 @@ function StageRoot(props) {
   const dragSuppressed = () => dragActive || Date.now() - lastDragEndAt.current < 350;
   const rows = props.useSessions((state) => state.byId);
   const statusMap = props.useSessionStatus((state) => state);
+  const rowsRef = import_react.default.useRef(rows);
+  const statusMapRef = import_react.default.useRef(statusMap);
+  rowsRef.current = rows;
+  statusMapRef.current = statusMap;
   const workspaces = props.useWorkspaces ? props.useWorkspaces((state) => state.items) : null;
   const containerRef = import_react.default.useRef(null);
   const [size, setSize] = import_react.default.useState({ width: 0, height: 0 });
@@ -3215,6 +3571,61 @@ function StageRoot(props) {
   const pendingComposerFocus = import_react.default.useRef(false);
   const splitDrag = import_react.default.useRef(null);
   const narrowRef = import_react.default.useRef(false);
+  const previewCacheRef = import_react.default.useRef(null);
+  if (!previewCacheRef.current) previewCacheRef.current = createPreviewCache({ max: 24 });
+  const captureSchedulerRef = import_react.default.useRef(null);
+  if (!captureSchedulerRef.current) captureSchedulerRef.current = createCaptureScheduler({ gapMs: 140 });
+  const [, setPreviewVersion] = import_react.default.useState(0);
+  import_react.default.useEffect(
+    () => () => {
+      try {
+        captureSchedulerRef.current.dispose();
+      } catch (_error) {
+      }
+      previewCacheRef.current.clear();
+    },
+    []
+  );
+  const captureFocusSnapshot = import_react.default.useCallback((sessionId) => {
+    const id = sessionId === void 0 || sessionId === null ? "" : String(sessionId);
+    if (!id) return false;
+    try {
+      const stageElement = containerRef.current;
+      if (!stageElement || typeof stageElement.querySelector !== "function") return false;
+      const frame = stageElement.querySelector('.onestep-frame[data-mode="focus"]');
+      if (!frame) return false;
+      const frameSessionId = frame.getAttribute("data-onestep-window-session");
+      if (frameSessionId && frameSessionId !== id) return false;
+      const body = frame.querySelector(".onestep-body");
+      if (!body) return false;
+      if (body.querySelector("[data-onestep-focus-preview]")) return false;
+      if (!body.querySelector("[data-onestep-occurrence]")) return false;
+      const width = Math.max(0, Math.round(body.clientWidth));
+      const height = Math.max(0, Math.round(body.clientHeight));
+      if (width < 3 || height < 3) return false;
+      let html = "";
+      try {
+        html = body.innerHTML;
+      } catch (_error) {
+        return false;
+      }
+      if (!html || html.length > MAX_INHERIT_SNAPSHOT_CHARS) return false;
+      const row = rowsRef.current ? rowsRef.current[id] : null;
+      const key = previewStatusKey(row, statusOf(statusMapRef.current, id));
+      previewCacheRef.current.set(id, key, html, width, height);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  }, []);
+  import_react.default.useEffect(() => {
+    const bridge = props.previewBridge;
+    if (!bridge) return void 0;
+    bridge.capture = captureFocusSnapshot;
+    return () => {
+      if (bridge.capture === captureFocusSnapshot) bridge.capture = null;
+    };
+  }, [props.previewBridge, captureFocusSnapshot]);
   const quickTick = props.quickSignal ? useStoreSnapshot(props.quickSignal) : 0;
   const focusInputTick = props.focusInputSignal ? useStoreSnapshot(props.focusInputSignal) : 0;
   const DEFERRED_LIVE_MS = 320;
@@ -3308,6 +3719,11 @@ function StageRoot(props) {
   }, [hostBox]);
   const candidates = (stage.candidates || []).filter((candidate) => candidate.sessionId !== focusId);
   const count = candidates.length;
+  const candidateIdKey = candidates.map((candidate) => candidate.sessionId).join("|");
+  import_react.default.useEffect(() => {
+    if (!candidateIdKey) return;
+    previewCacheRef.current.retain(candidateIdKey.split("|"));
+  }, [candidateIdKey]);
   const rightbarExpanded = typeof props.isRightbarExpanded === "function" ? !!props.isRightbarExpanded() : false;
   const compact = rightbarExpanded && size.width > 0 && size.width < LIMITS.stageMinWidth;
   const layout = solve({
@@ -3743,6 +4159,12 @@ function StageRoot(props) {
     }
     splitDrag.current = null;
   };
+  const railMaxFit = (() => {
+    if (!size.width || !size.height) return null;
+    const fit = stage.railSide === "top" ? size.height - LIMITS.gap - LIMITS.focusMinHeight : size.width - LIMITS.railInset - LIMITS.gap - LIMITS.focusMinWidth;
+    const min = stage.railSide === "top" ? LIMITS.railTop.min : LIMITS.railLeft.min;
+    return Math.max(min, Math.round(fit));
+  })();
   const onSplitterKeyDown = (event) => {
     const railSide = stage.railSide === "top" ? "top" : "left";
     const bounds = railSide === "top" ? LIMITS.railTop : LIMITS.railLeft;
@@ -3756,7 +4178,7 @@ function StageRoot(props) {
       if (event.key === "ArrowRight") next = stage.railSize + step;
     }
     if (event.key === "Home") next = bounds.min;
-    if (event.key === "End") next = bounds.max;
+    if (event.key === "End") next = railMaxFit == null ? bounds.min : railMaxFit;
     if (next === null) return;
     event.preventDefault();
     store.setRailSize(next);
@@ -3804,14 +4226,14 @@ function StageRoot(props) {
     const row = rows[sessionId];
     const status = statusOf(statusMap, sessionId);
     const freshlyDemoted = previousFocusRef.current && previousFocusRef.current !== focusId && previousFocusRef.current === sessionId;
-    const live = previewMode === "live" && !!reference && !deferredLiveIds[sessionId] && !freshlyDemoted && (!frame || frame.visible !== false);
+    const previewLive = previewMode === "live" && !!reference;
     const flash = !!(feedbackState.flash && feedbackState.flash[sessionId] && Date.now() - feedbackState.flash[sessionId] < FLASH_MS);
     const classified = classifyStatus(status, row);
     const title = SESSION_FIELDS.title(row) || t("window.unnamed");
     const bubble = feedbackState.bubble && feedbackState.bubble.sessionId === sessionId ? feedbackState.bubble : null;
     const candidateChromeH = 32;
-    const thumbScale = Math.max(0.12, Math.min(1, rect.w / 560));
-    const thumbW = Math.max(1, Math.round(rect.w / thumbScale));
+    const thumbW = Math.min(720, Math.max(560, Math.round(rect.w)));
+    const thumbScale = rect.w / thumbW;
     const thumbH = Math.max(1, Math.round(Math.max(1, rect.h - candidateChromeH) / thumbScale));
     const style = {
       left: frame && frame.absolute === false ? rect.x - (frame.scrollX || 0) : (railRect ? railRect.x : 0) + rect.x,
@@ -3822,13 +4244,19 @@ function StageRoot(props) {
       // P4-3：同名（sessionId）元素跨快照配对，VT 才能把候场卡 morph 到焦点位。
       "--onestep-vt-name": windowName(sessionId) || "none"
     };
+    const cardBody = h(
+      "div",
+      { className: "onestep-card-body" },
+      h("div", null, row && !row.blank ? t("card.recent") + " " + formatRelative(SESSION_FIELDS.updatedAt(row)) : t("card.blank")),
+      h("div", { className: "onestep-card-meta" }, t("bubble.raise"))
+    );
     return h(
       "div",
       {
         key: "candidate-" + sessionId,
         className: "onestep-frame",
         "data-mode": "candidate",
-        "data-preview": live ? "live" : "card",
+        "data-preview": previewLive ? "live" : "card",
         "data-flash": flash ? "1" : "0",
         "data-pending": bubble ? "1" : "0",
         "data-onestep-window-session": sessionId,
@@ -3883,36 +4311,26 @@ function StageRoot(props) {
       ),
       h(
         "div",
-        { className: "onestep-body", "data-inert": live ? "1" : "0", inert: live ? "" : void 0 },
-        live ? h(
-          "div",
-          { className: "onestep-thumb", "data-onestep-thumb": "1" },
-          h(
-            "div",
-            {
-              className: "onestep-thumb-content",
-              style: {
-                width: thumbW,
-                height: thumbH,
-                transform: "scale(" + thumbScale + ")"
-              }
-            },
-            h(WindowSlotContent, {
-              SessionProvider: props.SessionProvider,
-              renderSlot: props.renderSlot,
-              sessionId,
-              reference,
-              interactive: false,
-              onWindowError: props.onWindowError,
-              t
-            })
-          )
-        ) : h(
-          "div",
-          { className: "onestep-card-body" },
-          h("div", null, row && !row.blank ? t("card.recent") + " " + formatRelative(SESSION_FIELDS.updatedAt(row)) : t("card.blank")),
-          h("div", { className: "onestep-card-meta" }, t("bubble.raise"))
-        )
+        { className: "onestep-body", "data-inert": previewLive ? "1" : "0", inert: previewLive ? "" : void 0 },
+        previewLive ? h(CandidatePreview, {
+          sessionId,
+          reference,
+          statusKey: previewStatusKey(row, status),
+          width: thumbW,
+          height: thumbH,
+          // 卡片 1px 边框 + chrome 占位：快照只能放进真实内容盒（否则 contain 后会压边被 overflow 裁掉）。
+          boxWidth: Math.max(1, rect.w - 2),
+          boxHeight: Math.max(1, rect.h - 2 - candidateChromeH),
+          SessionProvider: props.SessionProvider,
+          renderSlot: props.renderSlot,
+          onWindowError: props.onWindowError,
+          t,
+          cache: previewCacheRef.current,
+          scheduler: captureSchedulerRef.current,
+          deferred: !!deferredLiveIds[sessionId] || !!freshlyDemoted,
+          onCaptured: () => setPreviewVersion((value) => value + 1),
+          placeholder: cardBody
+        }) : cardBody
       ),
       bubble ? h("button", {
         type: "button",
@@ -4336,7 +4754,7 @@ function StageRoot(props) {
       "aria-orientation": stage.railSide === "top" ? "horizontal" : "vertical",
       "aria-label": t("a11y.railResize"),
       "aria-valuemin": railBounds.min,
-      "aria-valuemax": railBounds.max,
+      "aria-valuemax": railMaxFit == null ? void 0 : railMaxFit,
       "aria-valuenow": Math.round(stage.railSide === "top" ? railRect.h : railRect.w),
       style: splitterStyle,
       onPointerDown: startSplitDrag,
@@ -4486,6 +4904,11 @@ function createProbe(deps) {
     setReducedMotion: (value) => actions.setReducedMotion(value),
     setRailCollapsed: (collapsed) => {
       actions.setRailCollapsed(collapsed);
+      return snapshot();
+    },
+    /** 0.7.0 验证：直接设置候场栏尺寸（自由宽度 e2e 用；生产路径是拖动分隔条）。 */
+    setRailSize: (px) => {
+      store.setRailSize(px);
       return snapshot();
     },
     toggleRailCollapsed: () => {
@@ -4739,8 +5162,26 @@ function installServiceWrap(options) {
       log("wrap.policy.error", { error: errorText(error) });
     }
     if (managed) {
-      svc.focus(record.id);
-      log("wrap.focus-managed", { method, kind: record.kind || null });
+      let revealed = false;
+      try {
+        revealed = !!(policy && typeof policy.onRevealManaged === "function" && policy.onRevealManaged(record));
+      } catch (error) {
+        followUpErrorCount += 1;
+        log("wrap.reveal.error", { error: errorText(error) });
+      }
+      if (!revealed) {
+        let highlighted = false;
+        try {
+          highlighted = !!(policy && typeof policy.onFocusManaged === "function" && policy.onFocusManaged(record));
+        } catch (error) {
+          followUpErrorCount += 1;
+          log("wrap.focus.highlight.error", { error: errorText(error) });
+        }
+        svc.focus(record.id);
+        log("wrap.focus-managed", { method, kind: record.kind || null, highlighted });
+        return;
+      }
+      log("wrap.reveal-managed", { method, kind: record.kind || null });
       return;
     }
     let plan = null;
@@ -5320,12 +5761,12 @@ function installFloatResize(deps = {}) {
             const removed = Array.prototype.slice.call(mutation.removedNodes || []);
             const added = Array.prototype.slice.call(mutation.addedNodes || []);
             const removedGrips = removed.some((node) => node && node.nodeType === 1 && node.hasAttribute && node.hasAttribute(RESIZE_ATTR));
-            const addedFloats = added.some(isFloatNode);
+            const changedFloats = added.some(isFloatNode) || removed.some(isFloatNode);
             if (removedGrips) {
               scheduleSync();
               return;
             }
-            if (addedFloats || isFloatNode(target)) {
+            if (changedFloats || isFloatNode(target)) {
               scheduleSync();
               return;
             }
@@ -5368,7 +5809,12 @@ function installFloatResize(deps = {}) {
     return grips;
   };
   const ensureGrips = (element) => {
-    if (!element || entries.has(element)) return;
+    if (!element) return;
+    const entry = entries.get(element);
+    if (entry) {
+      if (entry.grips.every((grip) => element.contains(grip))) return;
+      removeGrips(element);
+    }
     const grips = makeGrips(element);
     if (!grips) return;
     const onPointerDown = (event) => onGripPointerDown(event, element);
@@ -5393,8 +5839,10 @@ function installFloatResize(deps = {}) {
   const clearAll = () => {
     for (const element of Array.from(entries.keys())) removeGrips(element);
   };
+  const gestureValid = (active) => !!(active && enabled2() && active.sessionId === guard(() => getSessionId(), null) && active.panel === currentPanel() && active.element.isConnected && active.panel.contains(active.element) && active.element.getAttribute(COMPANION.attrs.peek) !== "1");
   const sync = () => {
     if (disposed) return;
+    if (gesture && !gestureValid(gesture)) cancelGesture("context-changed");
     if (!enabled2()) {
       stopObserver();
       clearAll();
@@ -5485,13 +5933,17 @@ function installFloatResize(deps = {}) {
     log("float.resize.cancel", { reason: reason || null });
   };
   const finishGesture = () => {
+    if (gesture && !gestureValid(gesture)) {
+      cancelGesture("context-changed");
+      return;
+    }
     const active = busy();
     if (!active) return;
     if (!active.moved) {
       restoreStyle(active);
       return;
     }
-    const result = commitFloatRect(active.element, active.rect, { getService, getSessionId });
+    const result = commitFloatRect(active.element, active.rect, { getService, getSessionId: () => active.sessionId });
     lastCommit = { at: Date.now(), rect: active.rect, ok: !!result.ok, via: result.via || null, reason: result.reason || null };
     if (!result.ok) {
       log("float.resize.commit.fail", { reason: result.reason || null });
@@ -5511,6 +5963,10 @@ function installFloatResize(deps = {}) {
   const onGestureMove = (event) => {
     const active = gesture;
     if (!active || event.pointerId !== active.pointerId) return;
+    if (!gestureValid(active)) {
+      cancelGesture("context-changed");
+      return;
+    }
     const dx = event.clientX - active.startX;
     const dy = event.clientY - active.startY;
     const rect = computeResizeRect(active.startRect, active.direction, dx, dy, active.startBounds, MIN_SIZE);
@@ -5524,7 +5980,10 @@ function installFloatResize(deps = {}) {
     if (event.pointerId !== void 0 && event.pointerId !== active.pointerId) return;
     finishGesture();
   };
-  const onGestureCancel = () => cancelGesture("pointercancel");
+  const onGestureCancel = (event) => {
+    if (gesture && event.pointerId !== void 0 && event.pointerId !== gesture.pointerId) return;
+    cancelGesture("pointercancel");
+  };
   const onGestureKeyDown = (event) => {
     if (event && event.key === "Escape") {
       event.preventDefault();
@@ -5541,6 +6000,8 @@ function installFloatResize(deps = {}) {
     if (DIRECTIONS.indexOf(direction) < 0) return;
     if (element.getAttribute(COMPANION.attrs.peek) === "1") return;
     if (element.hasAttribute(RESIZING_ATTR)) return;
+    const panel = currentPanel();
+    if (!panel || !panel.contains(element)) return;
     const rect = readRect(element);
     if (!rect) return;
     cancelGesture("superseded");
@@ -5555,6 +6016,8 @@ function installFloatResize(deps = {}) {
     }
     gesture = {
       element,
+      panel,
+      sessionId: guard(() => getSessionId(), null),
       grip,
       direction,
       pointerId: event.pointerId,
@@ -5608,9 +6071,70 @@ function installFloatResize(deps = {}) {
   return { sync, dispose, snapshot };
 }
 
+// src/client/float-flash.js
+var FLASH_ATTR = COMPANION.attrs.floatFlash;
+var FLASH_PULSES = COMPANION.defaults.floatFlashPulses;
+var FLASH_PULSE_MS = COMPANION.defaults.floatFlashPulseMs;
+var FLASH_DURATION = FLASH_PULSES * FLASH_PULSE_MS + 160;
+function createFloatFlash(deps = {}) {
+  const setTimer = typeof deps.setTimeout === "function" ? deps.setTimeout : (fn, ms) => setTimeout(fn, ms);
+  const clearTimer = typeof deps.clearTimeout === "function" ? deps.clearTimeout : (timer) => clearTimeout(timer);
+  const duration = Number.isFinite(deps.duration) && deps.duration > 0 ? deps.duration : FLASH_DURATION;
+  const timers = /* @__PURE__ */ new Map();
+  let disposed = false;
+  const stop = (element) => {
+    const timer = timers.get(element);
+    if (timer === void 0) return;
+    clearTimer(timer);
+    timers.delete(element);
+  };
+  const flash = (element) => {
+    if (disposed) return false;
+    if (!element || typeof element.setAttribute !== "function" || typeof element.removeAttribute !== "function") return false;
+    stop(element);
+    try {
+      element.removeAttribute(FLASH_ATTR);
+      if (typeof element.getBoundingClientRect === "function") element.getBoundingClientRect();
+      element.setAttribute(FLASH_ATTR, "1");
+    } catch (_error) {
+      return false;
+    }
+    const timer = setTimer(() => {
+      timers.delete(element);
+      try {
+        element.removeAttribute(FLASH_ATTR);
+      } catch (_error) {
+      }
+    }, duration);
+    timers.set(element, timer);
+    return true;
+  };
+  const isFlashing = (element) => timers.has(element);
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    for (const element of Array.from(timers.keys())) {
+      stop(element);
+      try {
+        element.removeAttribute(FLASH_ATTR);
+      } catch (_error) {
+      }
+    }
+  };
+  return { flash, isFlashing, dispose };
+}
+
+// src/client/quick-new.js
+async function startDraft(workspace, text, workspaceId, log) {
+  if (!workspace || typeof workspace.startSession !== "function") throw new Error("uiWorkspace.startSession missing");
+  const prompt = String(text || "");
+  await workspace.startSession(workspaceId || void 0, { prompt, whenDraftExists: "replace" });
+  if (log) log.log("quickNew.start", { promptLength: prompt.length, workspaceId: workspaceId || null });
+}
+
 // src/client/index.js
 var inject = INJECT;
-var VERSION = "0.7.0";
+var VERSION = "1.0.0";
 function readDiagnosticFlags() {
   const out = {};
   try {
@@ -5839,6 +6363,7 @@ function apply(ctx) {
   const dragSignal = createDragSignal();
   const pickerSignal = createSignal({ visible: false, sessionId: null });
   const focusPreviewSignal = createSignal(null);
+  const previewBridge = { capture: null };
   const sessionsSvc = () => {
     try {
       return ctx.get(SERVICES.sessions);
@@ -6257,9 +6782,45 @@ function apply(ctx) {
     getSessionId: () => companionFocusId()
   });
   floatResizeRef.current = floatResize;
+  const floatFlash = createFloatFlash();
+  const flashCompanionFloat = (tabId) => {
+    const sessionId = companionFocusId();
+    if (!sessionId || !tabId) return false;
+    const panel = findSessionPanel2(sessionId);
+    if (!panel) return false;
+    for (const element of panel.querySelectorAll(COMPANION.selectors.float)) {
+      if (element.getAttribute(COMPANION.attrs.content) === String(tabId)) return floatFlash.flash(element);
+    }
+    return false;
+  };
   const companionWrapPolicy = {
     isEnabled: wrapEnabled,
     isManaged: (tabId) => companionFloats().some((item) => item.tabId === String(tabId)),
+    /**
+     * 0.7.0（发布前修复）：再次点击某个「已收起」伴生窗的链接时，展开该浮窗（与点击右缘标签同语义：
+     * 只恢复这一窗、其余保持收起）。返回 true 表示已展开，包装层不再补 focus。
+     */
+    onRevealManaged: (record) => {
+      const tabId = record && record.id ? String(record.id) : "";
+      const sessionId = companionFocusId();
+      if (!sessionId || !tabId) return false;
+      const current = sessionStateOf(companionState, sessionId).floats.find((item) => item.tabId === tabId);
+      if (!current || !current.peeked) return false;
+      const result = actions.companionRestoreFloat(tabId);
+      return !!(result && result.ok);
+    },
+    /** 命中的已管理浮窗已展开：只高亮闪烁两下（层级抬升由包装层随后的官方 focus 完成）。 */
+    onFocusManaged: (record) => {
+      const tabId = record && record.id ? String(record.id) : "";
+      const sessionId = companionFocusId();
+      if (!sessionId || !tabId) return false;
+      const current = sessionStateOf(companionState, sessionId).floats.find((item) => item.tabId === tabId);
+      if (!current || current.peeked) return false;
+      companionState = persistCompanionState(touchFloat(companionState, sessionId, tabId, Date.now()));
+      const flashed = flashCompanionFloat(tabId);
+      log.log("companion.highlight", { tabId, flashed });
+      return flashed;
+    },
     planOpen: () => {
       const sessionId = companionFocusId();
       if (!sessionId) return null;
@@ -6757,10 +7318,7 @@ function apply(ctx) {
       return actions.companionSetMode(next);
     },
     async quickNew(text, workspaceId) {
-      const workspace = uiWorkspace();
-      if (!workspace || typeof workspace.startSession !== "function") throw new Error("uiWorkspace.startSession missing");
-      workspace.startSession(workspaceId || void 0, { prompt: String(text || ""), whenDraftExists: "replace" });
-      log.log("quickNew.start", { text: String(text || "").slice(0, 80), workspaceId: workspaceId || null });
+      await startDraft(uiWorkspace(), text, workspaceId, log);
     },
     undo() {
       const state = feedback.getSnapshot();
@@ -6912,6 +7470,17 @@ function apply(ctx) {
     const next = nextRaw ? String(nextRaw) : null;
     const prev = focusSignal.getSnapshot();
     if (prev === next) return;
+    const suppressPrevFocus = stageControl.suppressPrevFocus;
+    const activeCandidates = store.getSnapshot().candidates.length > 0;
+    const willDemote = !!(next && prev && prev !== next && !suppressPrevFocus && activeCandidates && byId()[prev]);
+    if (willDemote && typeof previewBridge.capture === "function") {
+      try {
+        if (previewBridge.capture(prev) === true) log.log("preview.inherit", { id: prev });
+        else log.log("preview.inherit.miss", { id: prev });
+      } catch (error) {
+        log.log("preview.inherit.error", String(error && error.message || error).slice(0, 160));
+      }
+    }
     focusSignal.set(next);
     log.log("focus.report", { from: prev, to: next });
     if (!next) {
@@ -7012,6 +7581,7 @@ function apply(ctx) {
               feedback,
               focusSignal,
               focusPreviewSignal,
+              previewBridge,
               quickSignal,
               focusInputSignal,
               dragSignal,
@@ -7605,6 +8175,10 @@ function apply(ctx) {
       } catch (_error) {
       }
       floatResizeRef.current = null;
+      try {
+        floatFlash.dispose();
+      } catch (_error) {
+      }
       if (motionMediaCleanup) {
         try {
           motionMediaCleanup();

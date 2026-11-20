@@ -7,7 +7,7 @@
  * - baseline 共享模块走 factory 的 require（external 表），不得打进 bundle；
  * - 产物放在仓库根（package.json 的 exports["./client"] 指向 ./client.js）。
  *
- * 用法：node scripts/build.mjs   （构建）+ node scripts/build.mjs --check（只校验语法）
+ * 用法：node scripts/build.mjs（构建）+ node scripts/build.mjs --check（校验磁盘产物与源码一致，不写盘）
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -15,8 +15,6 @@ import { fileURLToPath } from 'node:url'
 import * as esbuild from 'esbuild'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const ENTRY = path.join(ROOT, 'src', 'client', 'index.js')
-const OUT = path.join(ROOT, 'client.js')
 
 /** DSH client baseline 共享模块表（platform.ts；11 项，运行时由宿主提供）。 */
 const PLATFORM_MODULES = [
@@ -46,11 +44,14 @@ const FOOTER = `
 });
 `
 
-async function main() {
-  const checkOnly = process.argv.includes('--check')
-  if (!fs.existsSync(ENTRY)) throw new Error('missing entry: ' + ENTRY)
+export async function buildClient({ root = ROOT, checkOnly = false } = {}) {
+  const projectRoot = path.resolve(root)
+  const entry = path.join(projectRoot, 'src', 'client', 'index.js')
+  const out = path.join(projectRoot, 'client.js')
+  if (!fs.existsSync(entry)) throw new Error('missing entry: ' + entry)
   const result = await esbuild.build({
-    entryPoints: [ENTRY],
+    absWorkingDir: projectRoot,
+    entryPoints: [entry],
     bundle: true,
     write: false,
     format: 'cjs',
@@ -64,16 +65,23 @@ async function main() {
     logLevel: 'warning',
   })
   const body = result.outputFiles[0].text
-  const bundle = BANNER + body + FOOTER
+  const bundle = Buffer.from(BANNER + body + FOOTER, 'utf8')
   if (checkOnly) {
+    if (!fs.existsSync(out)) throw new Error('client.js is missing; run npm run build first')
+    if (!fs.readFileSync(out).equals(bundle)) {
+      throw new Error('client.js is out of date; run npm run build and include the updated bundle')
+    }
     console.log('[build] --check: ' + bundle.length + ' bytes OK')
-    return
+    return { bytes: bundle.length }
   }
-  fs.writeFileSync(OUT, bundle, 'utf8')
-  console.log('[build] wrote ' + path.relative(ROOT, OUT) + ' (' + bundle.length + ' bytes, esbuild ' + esbuild.version + ')')
+  fs.writeFileSync(out, bundle)
+  console.log('[build] wrote ' + path.relative(projectRoot, out) + ' (' + bundle.length + ' bytes, esbuild ' + esbuild.version + ')')
+  return { bytes: bundle.length }
 }
 
-main().catch((e) => {
-  console.error('[build] FAILED: ' + ((e && e.stack) || e))
-  process.exit(1)
-})
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  buildClient({ checkOnly: process.argv.includes('--check') }).catch((e) => {
+    console.error('[build] FAILED: ' + ((e && e.stack) || e))
+    process.exitCode = 1
+  })
+}
