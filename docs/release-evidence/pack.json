@@ -12,8 +12,8 @@
   ],
   "innerClientSha256": "5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B",
   "matchesRepo": true,
-  "generatedAt": "2026-11-21T03:56:10.799Z",
+  "generatedAt": "2026-11-21T05:10:17.575Z",
   "filename": "dsh-onestep-1.0.0.tgz",
   "npmShasum": "e8015e2e1012b9b6266d6c0eeefc3927d99054ce",
-  "note": "tarball 由 1.0.0 最终仓库树重新打包（2026-11-21 补 repository/homepage/bugs/keywords；版权主体 Copyright (c) 2026 Huaxingmo）；包内 client.js 与仓库文件同哈希"
+  "note": "tarball 为 npm 已发布的 1.0.0 产物（registry shasum e8015e2e…，sha256 与下载件一致）；版权主体 Copyright (c) 2026 Huaxingmo；包内 client.js 与仓库文件同哈希。仓库此后仅文档改动（README 标注 npm 已发布），代码产物未变；下个版本发布前需重新打包。"
 }

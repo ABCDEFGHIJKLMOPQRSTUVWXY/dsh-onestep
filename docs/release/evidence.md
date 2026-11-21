@@ -1,6 +1,6 @@
 # 发布证据索引（dsh-onestep 1.0.0）
 
-> **状态（2026-11-21）**：六份 JSON 均在 1.0.0 最终树上生成——`build`/`tests`/`gates`/`pack` 于 2026-11-21（补 npm metadata 后重打包），`install-drill`/`regression` 在隔离 profile `onestep-g8`（DSH 0.2.2-rc.5）复跑（20/20、F1/F2/CSS 全绿）。`client.js` **347283 B / `5CA24A6E…4E2B`**；tarball **90069 B / `02BD3A42…0709`**；版权主体 `Copyright (c) 2026 Huaxingmo`。详见[审查记录](../review/2026-11-20-review.md)。
+> **状态（2026-11-21）**：六份 JSON 均在 1.0.0 最终树上生成——`build`/`tests`/`gates`/`pack` 于 2026-11-21（补 npm metadata 后重打包），`install-drill`/`regression` 在隔离 profile `onestep-g8`（DSH 0.2.2-rc.5）复跑（20/20、F1/F2/CSS 全绿）。**已发布 npm 1.0.0**：registry 下载的 tarball sha256 与 `pack.json` 一致（`02BD3A42…`），并在新建隔离 profile `onestep-reg` 用 registry 包完成安装/启动/舞台/卸载冒烟。`client.js` **347283 B / `5CA24A6E…4E2B`**；tarball **90069 B / `02BD3A42…0709`**；版权主体 `Copyright (c) 2026 Huaxingmo`。详见[审查记录](../review/2026-11-20-review.md)。
 
 > 用途：索引 1.0.0 公开发布的门禁证据。证据由 Lead 在发布收口时用固定脚本从可复跑门禁输出汇总生成，归档为**脱敏后的结构化 JSON**；本文件只负责「有哪些证据、怎么读、怎么复跑」，不替代 JSON 本身。
 > 归档位置：`docs/release-evidence/`（随仓库入库）。原始日志、截图、浏览器数据、安装演练中间产物属于本地工作产物，**不入库**。

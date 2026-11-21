@@ -72,16 +72,16 @@ Onestep 把 DSH 的会话主区变成「焦点 + 候场」的窗口舞台：焦�
 - 开发内环：改 `client.js` 后刷新页面即生效（client-hmr）；改宿主半 `index.js` 或首次安装需要重启实例。
 - 安装/卸载以「停实例 → 变更 → 启动 → 验证」的确定性顺序为准，不要依赖运行期热挂载。
 
-### 2.4 从 npm 安装（公开发布后）
+### 2.4 从 npm 安装（已发布 1.0.0）
 
 插件发布到 npm 后，包名为 `dsh-onestep`，隔离 profile 可直接按包名安装：
 
 ```powershell
 & "<DSH 安装目录>\resources\runtime\cli\bin\dsh.cmd" `
-  plugin --profile <隔离 profile> add dsh-onestep
+  plugin --profile <隔离 profile> add dsh-onestep@1.0.0
 ```
 
-安装后重启实例；桌面端仍走 App 的 Plugins 页（§2.2）。发布前没有 registry 包时，用 §2.3 的目录安装路径。
+安装后重启实例；桌面端仍走 App 的 Plugins 页（§2.2）。离线或需要改代码验证时，用 §2.3 的目录安装路径。
 
 ### 2.5 更新与版本核对
 

@@ -38,7 +38,7 @@ Onestep 在不改 DSH 本体的前提下加了一层「窗口化舞台」：焦�
 |---|---|
 | 桌面 App（推荐） | Plugins / 插件页安装 `dsh-onestep` → **重启 DSH**；之后可在同一页卸载/回滚 |
 | 隔离 profile（开发/排障） | 用 CLI 建 profile 并安装，见下 |
-| npm（发布后） | `plugin --profile <p> add dsh-onestep` |
+| npm（已发布 1.0.0） | `plugin --profile <p> add dsh-onestep@1.0.0` |
 
 `desktop` profile 由 Electron 应用独占：CLI 只能 `list`，`add` 会被拒绝。
 

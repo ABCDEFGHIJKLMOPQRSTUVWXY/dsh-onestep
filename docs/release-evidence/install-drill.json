@@ -123,6 +123,24 @@
   },
   "consoleErrors": 0,
   "pageErrors": 0,
-  "generatedAt": "2026-11-21T04:12:16.699Z",
-  "note": "2026-11-21 在 DSH 0.2.2-rc.5 上复跑（App 于收口后自动更新；engines 范围 `>=0.2.2-rc.1 <0.3.0-0` 覆盖 rc.5）"
+  "generatedAt": "2026-11-21T05:09:36.371Z",
+  "note": "2026-11-21 在 DSH 0.2.2-rc.5 上复跑（App 于收口后自动更新；engines 范围 `>=0.2.2-rc.1 <0.3.0-0` 覆盖 rc.5）",
+  "registryVerification": {
+    "registry": "https://registry.npmjs.org/",
+    "spec": "dsh-onestep@1.0.0",
+    "publishedAt": "2026-11-21T04:52:14.088Z",
+    "distSha1": "e8015e2e1012b9b6266d6c0eeefc3927d99054ce",
+    "tarballSha256": "02BD3A426E8636B293497F8B22ECB195F85CB6F7FEAE67F98D6F5FC72C0D0709",
+    "innerClientSha256": "5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B",
+    "profile": "onestep-reg（新建隔离 profile，直接从 registry 安装 dsh-onestep@1.0.0）",
+    "assertions": {
+      "installedVersion": "1.0.0",
+      "bootEntryPresent": true,
+      "onestepGlobalVersion": "1.0.0",
+      "stageEnterExit": true,
+      "uninstallReverts": true,
+      "hostApplyAfterUninstall": false,
+      "pageErrors": 0
+    }
+  }
 }

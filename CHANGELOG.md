@@ -15,10 +15,10 @@
 
 ## [1.0.0] - 2026-11-20
 
-> 状态：**首个公开发布版本，已在仓库内收口**——版本号、构建产物、文档与门禁在同一提交内完成；`npm publish`、GitHub Release 与远端推送属外向动作，需用户授权后另行执行。
+> 状态：**首个公开发布版本，已发布到 npm**——2026-11-21 发布 `dsh-onestep@1.0.0`（registry shasum `e8015e2e…`），并在全新隔离 profile 用 registry 包完成安装/启动/舞台/卸载冒烟；GitHub Release 与市场提交未做。
 > 内容：`0.7.0` 的全部能力（见下方 `[0.7.0]` 段落）+ 2026-11-20 审查修复与工程改进。
 > 构建：`client.js` **347283 B / sha256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`**（`node scripts/build.mjs` 逐字节复现，连续两次同哈希）；单测 **190/190**（18 个文件，自动发现）；i18n zh/en 各 **75** 键；发布自查 **33/33**、脱敏命中 0。
-> npm 元数据：2026-11-21 补齐 `repository` / `homepage` / `bugs` / `keywords`，tarball 重打包为 **102496 B / sha256 `A7077DD04960252B1D608F0813BBC3654370A2083D2350630440038EDB501DA8`**（包内 `client.js` 未变）。
+> npm 元数据与文档：2026-11-21 补齐 `repository` / `homepage` / `bugs` / `keywords` 并精简 README（488 → 120 行），tarball 重打包为 **90069 B / sha256 `02BD3A426E8636B293497F8B22ECB195F85CB6F7FEAE67F98D6F5FC72C0D0709`**（包内 `client.js` 未变）。
 
 ### Fixed
 
