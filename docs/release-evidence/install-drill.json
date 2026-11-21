@@ -1,9 +1,14 @@
 {
   "environment": {
-    "dshVersion": "0.2.2-rc.1",
+    "dshVersion": "0.2.2-rc.5",
     "profileKind": "隔离 profile onestep-g8（CLI 初始化；bundles = @deepseek-ai/dsh-base + @deepseek-ai/dsh-web-app；安装 dsh-onestep-1.0.0.tgz）",
     "browser": "headless Edge（playwright-core, channel=msedge）, 1440x900",
-    "server": "loopback 127.0.0.1:4657（隔离实例，非桌面 App、非用户 profile）"
+    "server": "loopback 127.0.0.1:4659 / 4660（隔离实例，非桌面 App、非用户 profile）"
+  },
+  "tarball": {
+    "filename": "dsh-onestep-1.0.0.tgz",
+    "bytes": 102496,
+    "sha256": "A7077DD04960252B1D608F0813BBC3654370A2083D2350630440038EDB501DA8"
   },
   "steps": [
     {
@@ -39,7 +44,7 @@
     {
       "id": "server.start",
       "pass": true,
-      "note": "隔离 profile 服务启动成功并打印回环 URL"
+      "note": "隔离 profile 服务启动成功并打印回环 URL（DSH 0.2.2-rc.5 主机）"
     },
     {
       "id": "host.apply",
@@ -49,17 +54,17 @@
     {
       "id": "boot.entry.present",
       "pass": true,
-      "note": "boot graph 含 dsh-onestep 条目（rev=0c28d17c92e7）"
+      "note": "boot graph 含 dsh-onestep 条目（rev=27ab957d35e6，76 条目）"
     },
     {
       "id": "boot.bundle.served",
       "pass": true,
-      "note": "该条目 bundle HTTP 200、347351 B，包含 dsh-onestep 注册与 1.0.0 常量"
+      "note": "该条目 bundle HTTP 200，包含 dsh-onestep 注册与 1.0.0 常量"
     },
     {
       "id": "boot.plainPath",
       "pass": true,
-      "note": "/plugins/dsh-onestep/client.js 未在广告路径中 → 404（符合契约）"
+      "note": "/plugins/dsh-onestep/client.js 未在广告路径中 → 404（与契约一致）"
     },
     {
       "id": "browser.global",
@@ -69,7 +74,7 @@
     {
       "id": "stage.enter",
       "pass": true,
-      "note": "enterStage(2 会话) → mounted=true、1 焦点 + 2 候场、stage/focus/candidate 几何为正"
+      "note": "enterStage → mounted=true、1 焦点 + 1 候场、stage/focus 几何为正"
     },
     {
       "id": "stage.exit",
@@ -79,12 +84,12 @@
     {
       "id": "pageErrors",
       "pass": true,
-      "note": "pageerror = 0，requestFailures = 0；2 条 console error 均为 DSH 核心 /api/changes.summary 404"
+      "note": "pageerror = 0，console error = 0，requestFailure = 0"
     },
     {
       "id": "server.stop",
       "pass": true,
-      "note": "按命令行精确匹配停止该 profile 服务，remaining=0"
+      "note": "按命令行精确匹配停止该 profile 服务"
     },
     {
       "id": "cli.remove",
@@ -104,7 +109,7 @@
     {
       "id": "boot.entry.absent",
       "pass": true,
-      "note": "boot graph 73 条目、无 dsh-onestep；页面无 __ONESTEP__、无 onestep DOM 残留，官方界面正常"
+      "note": "boot graph 75 条目、无 dsh-onestep；页面无 __ONESTEP__、无 onestep DOM 残留，官方界面正常"
     }
   ],
   "passed": 20,
@@ -116,7 +121,8 @@
     "uninstallRevertsEntries": true,
     "noResidue": true
   },
-  "consoleErrors": 2,
-  "consoleErrorNote": "两处均为 DSH 核心端点 /api/changes.summary 的 404（同实例 /api/sessions、/api/changes/list 亦 404），与插件无关",
-  "generatedAt": "2026-11-20T08:32:54.962Z"
+  "consoleErrors": 0,
+  "pageErrors": 0,
+  "generatedAt": "2026-11-21T04:12:16.699Z",
+  "note": "2026-11-21 在 DSH 0.2.2-rc.5 上复跑（App 于收口后自动更新；engines 范围 `>=0.2.2-rc.1 <0.3.0-0` 覆盖 rc.5）"
 }

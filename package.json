@@ -5,6 +5,22 @@
   "type": "module",
   "license": "MIT",
   "author": "Huaxingmo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ABCDEFGHIJKLMOPQRSTUVWXY/dsh-onestep.git"
+  },
+  "homepage": "https://github.com/ABCDEFGHIJKLMOPQRSTUVWXY/dsh-onestep#readme",
+  "bugs": {
+    "url": "https://github.com/ABCDEFGHIJKLMOPQRSTUVWXY/dsh-onestep/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "session-stage",
+    "multi-session",
+    "workspace"
+  ],
   "main": "./index.js",
   "exports": {
     ".": "./index.js",

@@ -20,7 +20,7 @@
 
 1. [docs/compatibility.md](compatibility.md)：支持范围、插件依赖的 DSH 契约面、rc 升级 diff 清单与回退方式；
 2. [SECURITY.md](../SECURITY.md)：环境安全边界（含本机回环 `/plugins/**` 无鉴权等披露）；
-3. [README.md](../README.md) §3：桌面 App / 隔离 profile / npm 三种安装路径与卸载回滚。
+3. [README.md](../README.md)：桌面 App / 隔离 profile / npm 三种安装路径与卸载回滚。
 
 ### 开发、二次开发与排障
 
@@ -115,4 +115,4 @@
 - **DSH 基线**：Desktop `0.2.2-rc.1`；支持范围 `>=0.2.2-rc.1 <0.3.0-0 || >=0.2.1-rc.5 <0.2.2-0`；
 - **许可**：MIT，见 [LICENSE](../LICENSE)；
 - **当前构建产物（2026-11-20）**：`client.js` 347283 B / sha256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`；`build:check` 已验证源码与磁盘产物一致；本轮单测 190/190；隔离 profile 上已完成安装/卸载演练与 F1/F2/CSS 定向回归，桌面 App 内卸载/重装已由用户确认（B4 ✅），见 [本轮审查记录](review/2026-11-20-review.md)。
-- **tarball（2026-11-20 重打包）**：`dsh-onestep-1.0.0.tgz` 101808 B / sha256 `0B9C8D57F37560DEDDCE1ABB298159668E6B97CF107365B04F96BF0EDF5516BF`，6 个文件（白名单一致，包内 `client.js` 与仓库同哈希）；隔离 profile 安装/卸载演练已复跑（G8 ✅），P3/P4 全量端到端与桌面 App 内确认仍待补齐。
+- **tarball（2026-11-21 重打包，补 npm metadata）**：`dsh-onestep-1.0.0.tgz` 90069 B / sha256 `02BD3A426E8636B293497F8B22ECB195F85CB6F7FEAE67F98D6F5FC72C0D0709`，6 个文件（白名单一致，包内 `client.js` 与仓库同哈希）；隔离 profile 安装/卸载演练已复跑（G8 ✅），P3/P4 全量端到端与桌面 App 内确认仍待补齐。

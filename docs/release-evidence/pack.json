@@ -1,6 +1,6 @@
 {
-  "bytes": 101808,
-  "sha256": "0B9C8D57F37560DEDDCE1ABB298159668E6B97CF107365B04F96BF0EDF5516BF",
+  "bytes": 90069,
+  "sha256": "02BD3A426E8636B293497F8B22ECB195F85CB6F7FEAE67F98D6F5FC72C0D0709",
   "entries": 6,
   "whitelist": [
     "LICENSE",
@@ -12,8 +12,8 @@
   ],
   "innerClientSha256": "5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B",
   "matchesRepo": true,
-  "generatedAt": "2026-11-20T08:09:20.858Z",
+  "generatedAt": "2026-11-21T03:56:10.799Z",
   "filename": "dsh-onestep-1.0.0.tgz",
-  "npmShasum": "6f3199d78206d0881eaf3900a743e0b620c8e957",
-  "note": "tarball 由 1.0.0 最终仓库树重新打包（版权主体 Copyright (c) 2026 Huaxingmo）；包内 client.js 与仓库文件同哈希；安装演练（G8）尚未在 1.0.0 上复跑，install-drill.json 为 0.7.0 历史归档"
+  "npmShasum": "e8015e2e1012b9b6266d6c0eeefc3927d99054ce",
+  "note": "tarball 由 1.0.0 最终仓库树重新打包（2026-11-21 补 repository/homepage/bugs/keywords；版权主体 Copyright (c) 2026 Huaxingmo）；包内 client.js 与仓库文件同哈希"
 }

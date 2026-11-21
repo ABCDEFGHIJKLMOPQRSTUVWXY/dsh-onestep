@@ -14,10 +14,10 @@
     "target": "chrome120",
     "externals": 11
   },
-  "generatedAt": "2026-11-20T08:09:20.858Z",
+  "generatedAt": "2026-11-21T03:56:10.799Z",
   "tarball": {
     "filename": "dsh-onestep-1.0.0.tgz",
-    "bytes": 101808,
-    "sha256": "0B9C8D57F37560DEDDCE1ABB298159668E6B97CF107365B04F96BF0EDF5516BF"
+    "bytes": 90069,
+    "sha256": "02BD3A426E8636B293497F8B22ECB195F85CB6F7FEAE67F98D6F5FC72C0D0709"
   }
 }
