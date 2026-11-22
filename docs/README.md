@@ -111,7 +111,7 @@
 
 ## 6. 版本与状态
 
-- **插件版本**：`dsh-onestep` 1.0.2（本地提交；registry 上仍为 1.0.0）；
+- **插件版本**：`dsh-onestep` 1.0.2（2026-11-22 已发布 npm，registry shasum `53a8ae3f…`）；
 - **DSH 基线**：Desktop `0.2.2-rc.1`；支持范围 `>=0.2.2-rc.1 <0.3.0-0 || >=0.2.1-rc.5 <0.2.2-0`；
 - **许可**：MIT，见 [LICENSE](../LICENSE)；
 - **当前构建产物（2026-11-20）**：`client.js` 347283 B / sha256 `5CA24A6E4FD0D00EE9926B10D823CEF9A55EB1D2ADF4290396C88B802CF14E2B`；`build:check` 已验证源码与磁盘产物一致；本轮单测 190/190；隔离 profile 上已完成安装/卸载演练与 F1/F2/CSS 定向回归，桌面 App 内卸载/重装已由用户确认（B4 ✅），见 [本轮审查记录](review/2026-11-20-review.md)。

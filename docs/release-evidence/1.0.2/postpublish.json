@@ -1,0 +1,99 @@
+{
+  "ok": true,
+  "registry": "https://registry.npmjs.org/",
+  "published": {
+    "version": "1.0.2",
+    "distTagLatest": "1.0.2",
+    "shasum": "53a8ae3fde07fefaa238be5ab6df4d3789fdf00e",
+    "integrity": "sha512-XwB4uGdu34Qtb7fijtiPC/IAO5wCUFdWgXb9WIkEBt7lfjeDRJ25KfL1VkgxjA9oyZwI0LK/bDc4r879dYkCVA==",
+    "tarball": "https://registry.npmjs.org/dsh-onestep/-/dsh-onestep-1.0.2.tgz",
+    "unpackedSize": 362604
+  },
+  "tarballVerification": {
+    "registryBytes": 90961,
+    "registrySha256": "71D64DBCCEB40F51694534F4B2006BCDDF87CCB1C9BC603E3213F75F1BCA146B",
+    "matchesLocalPackedTarball": true,
+    "npmShasumMatches": true
+  },
+  "installSource": "https://registry.npmjs.org/dsh-onestep/-/dsh-onestep-1.0.2.tgz",
+  "profile": "onestep-reg102",
+  "steps": [
+    {
+      "step": "profile.created",
+      "at": "2026-11-22T06:12:18.704Z",
+      "data": {
+        "url": "http://127.0.0.1:4675"
+      }
+    },
+    {
+      "step": "registry.install",
+      "at": "2026-11-22T06:12:24.311Z",
+      "data": {
+        "output": "+ dsh-onestep 1.0.2 |  | Done in 3.5s using pnpm v11.28.5"
+      }
+    },
+    {
+      "step": "profile.manifest",
+      "at": "2026-11-22T06:12:24.312Z",
+      "data": {
+        "dependency": "https://registry.npmjs.org/dsh-onestep/-/dsh-onestep-1.0.2.tgz",
+        "inBundles": true
+      }
+    },
+    {
+      "step": "boot.probe",
+      "at": "2026-11-22T06:12:30.096Z",
+      "data": {
+        "version": "1.0.2",
+        "bootEntries": 76,
+        "hasSelf": true
+      }
+    },
+    {
+      "step": "stage.mount",
+      "at": "2026-11-22T06:12:31.084Z",
+      "data": {
+        "mounted": true,
+        "dom": {
+          "stage": 1,
+          "focus": 1,
+          "candidates": 1
+        }
+      }
+    },
+    {
+      "step": "stage.exit",
+      "at": "2026-11-22T06:12:31.524Z",
+      "data": {
+        "stage": 0,
+        "composer": 1
+      }
+    },
+    {
+      "step": "pageerrors",
+      "at": "2026-11-22T06:12:31.524Z",
+      "data": {
+        "count": 0,
+        "sample": []
+      }
+    },
+    {
+      "step": "plugin.remove",
+      "at": "2026-11-22T06:12:34.055Z",
+      "data": {
+        "output": " | Done in 370ms using pnpm v11.28.5"
+      }
+    },
+    {
+      "step": "boot.afterRemove",
+      "at": "2026-11-22T06:12:40.509Z",
+      "data": {
+        "probe": false,
+        "hasSelf": false,
+        "stageDom": 0
+      }
+    }
+  ],
+  "note": "发布后验证：从 registry tarball URL 在全新隔离 profile 安装 → 版本/舞台/退出 → 卸载回落；两阶段 pageerror 0。注意 npm 客户端读 packument 有本地缓存（发布后立即 npm view 会 E404），以 curl packument 的 CDN 结果为准。",
+  "generatedAt": "2026-11-22T06:13:11.376Z"
+}
