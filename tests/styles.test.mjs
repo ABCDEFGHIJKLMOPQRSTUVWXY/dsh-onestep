@@ -62,3 +62,14 @@ test('CSS：0.7.0 再次点击高亮规则齐备（两下动画 + reduced 静态
   assert.ok(CSS.includes(':root[data-onestep-motion="reduced"] [data-dockkit-float][data-onestep-float-flash]::after'))
   assert.ok(CSS.includes('@media (prefers-reduced-motion:reduce){[data-dockkit-float][data-onestep-float-flash]::after{animation:none;opacity:1}}'))
 })
+
+test('CSS：候场快照内一律不保留 backdrop-filter 玻璃层', () => {
+  // 背景：美化插件给正文块（引用/列表/代码/表格/正文行/操作条）挂 backdrop-filter，快照整套克隆后再被
+  // transform:scale() 包住；实测一段 4 行对话＝21 层，12 张卡＝252 层，重绘时整页闪烁。这里锁死四个选择器与 !important。
+  const rule =
+    '.onestep-thumb-content,\n' +
+    '.onestep-thumb-content *,\n' +
+    '.onestep-thumb-content *::before,\n' +
+    '.onestep-thumb-content *::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}'
+  assert.ok(CSS.includes(rule), '候场快照的 backdrop-filter 清除规则缺失或被改写')
+})

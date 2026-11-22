@@ -2,7 +2,7 @@
 
 > **2026-11-20 本轮更新**：190/190 单测、构建一致性、i18n、版本范围、文档检查及发布自查已通过。当前 `client.js` 为 347283 B / SHA-256 `3B575E4DF04A4274FBF29FC0D43D33CD6804FEE19954DFAF48B813CC7F458148`。详见 [审查与优化记录](review/2026-11-20-review.md)。既有隔离 DSH 服务未运行，本轮未复跑实机端到端与安装演练；旧发布证据仍须重生成。
 
-> 适用版本：**dsh-onestep 1.0.1**；基线 DSH Desktop **0.2.2-rc.1**。
+> 适用版本：**dsh-onestep 1.0.2**；基线 DSH Desktop **0.2.2-rc.1**。
 > 本文面向想理解实现、参与维护、或在 DSH rc 升级时定位契约改动的读者。
 > 相关文档：[README](../README.md) · [文档索引](./README.md) · [使用手册](./user-guide.md) · [兼容性与 rc 升级契约](./compatibility.md) · [发布前审查报告](./review/0.7.0-pre-release.md)
 

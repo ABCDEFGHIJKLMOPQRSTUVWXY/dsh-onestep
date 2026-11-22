@@ -90,6 +90,15 @@ ${motionTokensCss()}
 /* 候场卡静态快照：官方内容按逻辑宽度渲染一次后克隆为静态画面，整体等比缩放，避免在 232px 逻辑宽度下重排导致布局崩坏 */
 .onestep-thumb{position:absolute;inset:0;overflow:hidden;background:var(--dsw-alias-bg-base,#15181c)}
 .onestep-thumb-content{position:absolute;left:0;top:0;transform-origin:top left;pointer-events:none}
+/* 候场快照里的「玻璃」一律收掉：美化插件（如皮肤中心 blue-fantasy）给引用/列表/代码/表格/正文行/操作条各挂一层
+   backdrop-filter，快照会把它们原样克隆，外层再套 transform:scale()——实测一段 4 行对话的克隆里就有 21 层高斯模糊，
+   候场栏放 3 张卡＝63 层、12 张卡＝252 层，且全部落在缩放变换里，Chromium 每次重绘都要重采样整条链，
+   表现为悬停/换焦时整页闪烁甚至局部消失（连不属舞台的侧栏、浮层一起闪）。静态快照不采样实时背景，
+   直接置 none：板底颜色仍在、观感几乎不变，层数归零。 */
+.onestep-thumb-content,
+.onestep-thumb-content *,
+.onestep-thumb-content *::before,
+.onestep-thumb-content *::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 /* 候场栏 ↔ 焦点窗 可拖拽分隔条（比例调整） */
 .onestep-splitter{position:absolute;z-index:14;display:flex;align-items:center;justify-content:center;background:transparent;touch-action:none;outline:none}
 .onestep-splitter[data-orientation="vertical"]{cursor:col-resize}
