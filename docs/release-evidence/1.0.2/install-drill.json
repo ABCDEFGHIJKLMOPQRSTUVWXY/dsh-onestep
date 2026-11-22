@@ -1,0 +1,126 @@
+{
+  "ok": true,
+  "profile": "onestep-rel102",
+  "port": 4671,
+  "tarball": {
+    "file": "dsh-onestep-1.0.2.tgz",
+    "bytes": 90961,
+    "sha256": "71D64DBCCEB40F51694534F4B2006BCDDF87CCB1C9BC603E3213F75F1BCA146B"
+  },
+  "steps": [
+    {
+      "step": "tarball",
+      "at": "2026-11-22T05:05:25.467Z",
+      "data": {
+        "file": "dsh-onestep-1.0.2.tgz",
+        "bytes": 90961,
+        "sha256": "71D64DBCCEB40F51694534F4B2006BCDDF87CCB1C9BC603E3213F75F1BCA146B"
+      }
+    },
+    {
+      "step": "profile.created",
+      "at": "2026-11-22T05:05:28.325Z",
+      "data": {
+        "exists": true
+      }
+    },
+    {
+      "step": "plugin.add",
+      "at": "2026-11-22T05:05:31.430Z",
+      "data": {
+        "output": "+ dsh-onestep 1.0.2 |  | Done in 555ms using pnpm v11.28.5"
+      }
+    },
+    {
+      "step": "profile.manifest",
+      "at": "2026-11-22T05:05:31.430Z",
+      "data": {
+        "dependency": "file:D:/Github/dsh-onestep/dsh-onestep-1.0.2.tgz",
+        "inBundles": true
+      }
+    },
+    {
+      "step": "boot.probe",
+      "at": "2026-11-22T05:05:37.054Z",
+      "data": {
+        "version": "1.0.2",
+        "bootEntries": 76,
+        "hasSelf": true
+      }
+    },
+    {
+      "step": "sessions.pick",
+      "at": "2026-11-22T05:05:37.067Z",
+      "data": {
+        "total": 246,
+        "picked": 1
+      }
+    },
+    {
+      "step": "stage.mount",
+      "at": "2026-11-22T05:05:38.037Z",
+      "data": {
+        "mounted": true,
+        "candidates": 1,
+        "dom": {
+          "stage": 1,
+          "candidates": 1,
+          "focus": 1
+        }
+      }
+    },
+    {
+      "step": "stage.exit",
+      "at": "2026-11-22T05:05:38.477Z",
+      "data": {
+        "stage": 0,
+        "probe": true,
+        "composer": 1
+      }
+    },
+    {
+      "step": "pageerrors.installed",
+      "at": "2026-11-22T05:05:38.477Z",
+      "data": {
+        "count": 0,
+        "sample": []
+      }
+    },
+    {
+      "step": "plugin.remove",
+      "at": "2026-11-22T05:05:41.331Z",
+      "data": {
+        "output": "- dsh-onestep 1.0.2 |  | Done in 350ms using pnpm v11.28.5"
+      }
+    },
+    {
+      "step": "profile.manifest.after",
+      "at": "2026-11-22T05:05:41.331Z",
+      "data": {
+        "dependency": null,
+        "inBundles": false
+      }
+    },
+    {
+      "step": "boot.afterRemove",
+      "at": "2026-11-22T05:05:48.378Z",
+      "data": {
+        "probe": false,
+        "hasSelf": false,
+        "bootEntries": 75,
+        "stageDom": 0,
+        "officialComposer": 2
+      }
+    },
+    {
+      "step": "pageerrors.afterRemove",
+      "at": "2026-11-22T05:05:48.378Z",
+      "data": {
+        "count": 0,
+        "sample": []
+      }
+    }
+  ],
+  "note": "隔离 profile 上：创建 → plugin add → 重启 → 版本/boot 探测 → 进舞台(1 焦点+1 候场) → 退出 → 卸载 → 重启回落；两阶段 pageerror 均为 0",
+  "generatedAt": "2026-11-22T05:12:42.818Z"
+}

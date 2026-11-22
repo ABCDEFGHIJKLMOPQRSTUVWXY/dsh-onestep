@@ -78,3 +78,18 @@
 | [本轮审查记录](../review/2026-11-20-review.md) | 1.0.0 收口前的审查、修复与独立复验 |
 | [变更日志](../../CHANGELOG.md) | 版本变更与已知限制 |
 | [兼容性说明](../compatibility.md) | DSH rc 支持范围与升级契约流程 |
+
+## 7. 1.0.2 证据（2026-11-22）
+
+> 1.0.2 的证据归档在 **`docs/release-evidence/1.0.2/`**（与 1.0.0 的六份并列，互不覆盖）；采集基线 DSH **0.2.2-rc.5**、隔离 profile `onestep-rel102`。
+
+| 证据 | 结论 |
+|---|---|
+| `1.0.2/build.json` · `pack.json` | `client.js` **348702 B / `984DBEC5…D8CF0`**；tarball `dsh-onestep-1.0.2.tgz` **90961 B / `71D64DBC…146B`**；6 文件白名单，包内 `client.js` 哈希 = 仓库文件 |
+| `1.0.2/tests.json` · `gates.json` | 单测 **191/191**（18 文件）；i18n zh/en=75、hardcoded 0；engines PASS；发布自查 **33/33**、命中 0；文档 **16/16**；`node --check client.js` 通过 |
+| `1.0.2/install-drill.json` | 隔离 profile：创建 → `plugin add dsh-onestep-1.0.2.tgz` → 重启 → `__ONESTEP__.version=1.0.2`、boot 条目 **76** 且含插件 → 进舞台（1 焦点 + 1 候场，DOM 各 1）→ 退出（舞台 DOM 0、官方输入区恢复）→ 卸载 → 重启回落（boot 条目 **75**、无插件全局、无舞台 DOM）；两阶段 **pageerror 0** |
+| `1.0.2/regression.json` | F1：提升唯一候场无 `stage.mount`/`stage.unmount`、舞台根节点不变、仍挂载；F2：再加一个候场后提升，被降级会话成为候场卡、**`ref.release` 0 次**；CSS：插件规则 **157** 条（扫描 4962 条），`.onestep-rail-mini` / `.onestep-rail-scroll-btn` 命中且收起态计算样式 `display=flex` |
+
+复跑入口（脚本在本地 `tmp/release-drill/`，属不入库的工作产物；口径见各文件 `generatedAt`）：`drill.mjs`（G8 演练）、`g9.mjs`（G9 定向回归）、`evidence.mjs`（把实跑产物汇总成上面六份 JSON）。
+
+> **安装演练注意**：`dsh <profile> --from-default-profile <base>` 是**重建**语义——对已存在的 profile 再次带上它，会把第三方依赖、`dsh.profile.bundles` 条目、`node_modules` 与 lock 一并抹掉（实测：`plugin add` 后重启仍带该标志 → 依赖消失、boot 条目里没有插件）。因此只有**首次创建** profile 时传该标志，之后重启一律只写 `dsh <profile> --no-open --port <p>`。

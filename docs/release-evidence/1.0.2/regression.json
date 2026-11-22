@@ -1,0 +1,41 @@
+{
+  "ok": true,
+  "dshVersion": "0.2.2-rc.5",
+  "css": {
+    "ruleCount": 157,
+    "totalRulesScanned": 4962,
+    "hasRule": {
+      "mini": true,
+      "scrollBtn": true
+    },
+    "computedDisplay": "flex",
+    "pass": true
+  },
+  "f1": {
+    "windowEntries": 0,
+    "stageMountEvents": 0,
+    "stageUnmountEvents": 0,
+    "stageRootSameNode": true,
+    "stageStillMounted": true,
+    "focusBefore": "session-demo-1",
+    "focusAfter": "session-demo-2",
+    "pass": true
+  },
+  "f2": {
+    "demotedId": "session-demo-2",
+    "demotedBecameCandidate": true,
+    "candidateFrames": 2,
+    "refReleaseEvents": 0,
+    "refRetainEvents": 0,
+    "stageRootSameNode": true,
+    "stageMountEvents": 0,
+    "stageUnmountEvents": 0,
+    "pass": true
+  },
+  "pageErrors": {
+    "count": 0,
+    "sample": []
+  },
+  "note": "G9 定向回归：同一隔离实例（安装 1.0.2 tarball 后）复跑 F1/F2/CSS",
+  "generatedAt": "2026-11-22T05:12:42.818Z"
+}

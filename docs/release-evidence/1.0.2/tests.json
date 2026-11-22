@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "total": 191,
+  "pass": 191,
+  "fail": 0,
+  "skipped": 0,
+  "files": 18,
+  "note": "node --test tests/*.test.mjs（自动发现）",
+  "generatedAt": "2026-11-22T05:12:42.817Z"
+}

@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "tarball": {
+    "filename": "dsh-onestep-1.0.2.tgz",
+    "bytes": 90961,
+    "sha256": "71D64DBCCEB40F51694534F4B2006BCDDF87CCB1C9BC603E3213F75F1BCA146B"
+  },
+  "entries": [
+    "package/LICENSE",
+    "package/client.js",
+    "package/index.js",
+    "package/package.json",
+    "package/README.md",
+    "package/cordis.patch.yml"
+  ],
+  "innerClientSha256": "984DBEC56FEAD2ED2A196EB29B229EF183924A4525A1067F696F175C6BDD8CF0",
+  "command": "node scripts/p2/pack/check-pack.mjs --tag repo --out artifacts/p2/pack/pack.json",
+  "generatedAt": "2026-11-22T05:12:42.816Z"
+}
