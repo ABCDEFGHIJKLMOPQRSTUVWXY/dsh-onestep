@@ -13,11 +13,14 @@ import { motionTokensCss, motionReducedCss, motionViewTransitionCss } from './mo
 
 export const CSS = `
 ${motionTokensCss()}
-.onestep-stage{position:fixed;z-index:2;overflow:hidden;box-sizing:border-box;background:var(--dsw-alias-bg-base,#15181c);color:var(--dsw-alias-label-primary,#e6e6e6);font:13px/1.45 var(--dsw-font-family,system-ui,sans-serif)}
+/* 舞台是纯布局层：不刷自己的底色。宿主或美化插件（皮肤中心/壁纸类）把背景图铺在 z-index:-2 的固定层上，
+   舞台若用 bg-base 铺满主列，候场栏留白会露出这一层「自成一套」的底色（深色皮肤下即一片来源不明的深蓝），
+   并且整块主列的背景图被压掉。放行后：有背景图就透出来，没有则露出宿主自己的 bg-base，观感不变。 */
+.onestep-stage{position:fixed;z-index:2;overflow:hidden;box-sizing:border-box;background:transparent;color:var(--dsw-alias-label-primary,#e6e6e6);font:13px/1.45 var(--dsw-font-family,system-ui,sans-serif)}
 .onestep-stage *{box-sizing:border-box}
 .onestep-stage-rail{position:absolute;display:flex;gap:12px;padding:0;view-transition-name:var(--onestep-rail-vt-name,none)}
 /* 收起态：候场栏收为 40px 边条，需压在焦点窗（z-index:3）之上才可见（P2-6 截图复核发现的绘制缺陷修复）。 */
-.onestep-stage-rail[data-collapsed="1"]{z-index:4;background:var(--dsw-alias-bg-layer-1,#1b1f24)}
+.onestep-stage-rail[data-collapsed="1"]{z-index:4;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1,#1b1f24) 72%,transparent);-webkit-backdrop-filter:blur(12px) saturate(1.15);backdrop-filter:blur(12px) saturate(1.15)}
 .onestep-stage[data-rail-side="left"] .onestep-stage-rail[data-collapsed="1"]{border-right:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.28));border-radius:0 8px 8px 0}
 .onestep-stage[data-rail-side="top"] .onestep-stage-rail[data-collapsed="1"]{border-bottom:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.28));border-radius:0 0 8px 8px}
 .onestep-frame{position:absolute;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.28));border-radius:var(--dsw-radius-md,12px);background:var(--dsw-alias-bg-layer-2,#2c2c2e);view-transition-name:var(--onestep-vt-name,none);box-shadow:var(--dsw-elevation-panel,0 8px 24px rgba(0,0,0,.22));transition:box-shadow var(--onestep-base) var(--onestep-ease),transform var(--onestep-base) var(--onestep-ease),border-color var(--onestep-base) var(--onestep-ease)}

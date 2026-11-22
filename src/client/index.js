@@ -48,7 +48,7 @@ import { startDraft } from './quick-new.js'
 export const inject = INJECT
 
 /** 插件版本（与 package.json 保持一致；构建期不读文件）。 */
-const VERSION = '1.0.0'
+const VERSION = '1.0.1'
 
 /**
  * 诊断开关：URL hash `#onestep=no-locale,no-shortcuts,no-entries,no-overlay,no-sessions,no-main`。

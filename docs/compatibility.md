@@ -1,6 +1,6 @@
 # 兼容性与 DSH rc 升级契约
 
-> 适用版本：**dsh-onestep 1.0.0**；基线 DSH Desktop **0.2.2-rc.1**。
+> 适用版本：**dsh-onestep 1.0.1**；基线 DSH Desktop **0.2.2-rc.1**。
 > 本文说明插件如何声明与 DSH 的版本关系、宿主契约集中在哪、用到哪些非公开扩展点，以及每次 DSH rc 发布后的升级核对流程。
 > 相关文档：[README](../README.md) · [CHANGELOG](../CHANGELOG.md) · [SECURITY](../SECURITY.md) · [架构与实现原理](./architecture.md) · [发布检查表](./release/checklist.md) · [发布证据索引](./release/evidence.md) · [发布前审查报告](./review/0.7.0-pre-release.md)
 
@@ -8,7 +8,7 @@
 
 | 项 | 值 |
 |---|---|
-| 插件版本 | 1.0.0 |
+| 插件版本 | 1.0.1 |
 | DSH 基线 | DSH Desktop **0.2.2-rc.1**（桌面 App 与 Web 端同源） |
 | `engines.dsh` | `>=0.2.2-rc.1 <0.3.0-0 \|\| >=0.2.1-rc.5 <0.2.2-0` |
 | 支持策略 | 跟随后续 rc：声明「当前最新 rc + 上一个 rc」，每次 rc 适配按 patch/minor 发布 |
